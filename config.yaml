@@ -1,0 +1,12 @@
+backend: 127.0.0.1:8080
+cors:
+  allow-origin:
+  allow-credentials:
+  allow-methods:
+  allow-headers:
+proxy:
+  port: 18080
+  api-prefix: "/"
+swagger:
+  file: "pay_gateway.swagger.json"
+
