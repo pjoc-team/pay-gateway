@@ -1,8 +1,8 @@
 package gateway
 
 import (
-	"github.com/stretchr/testify/assert"
 	"github.com/pjoc-team/base-service/pkg/util"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
