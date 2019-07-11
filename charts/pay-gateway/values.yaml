@@ -9,11 +9,6 @@ image:
 
 # define environment variables here as a map of key: value
 env:
-podArgs:
-- '--listen-addr=:8080'
-- '--log-level=debug'
-- '--etcd-peers=etcd-0.etcd:2379,etcd-1.etcd:2379,etcd-2.etcd:2379'
-- '-s pay-gateway'
 
 # enable this flag to use knative serve to deploy the app
 knativeDeploy: false

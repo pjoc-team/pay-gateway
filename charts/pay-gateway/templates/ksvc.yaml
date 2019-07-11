@@ -20,7 +20,7 @@ spec:
             env:
 {{- range $pkey, $pval := .Values.env }}
             - name: {{ $pkey }}
-              value: {{ $pval }}
+              value: {{ quote $pval }}
 {{- end }}
             livenessProbe:
               httpGet:
