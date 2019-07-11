@@ -23,6 +23,10 @@ spec:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+{{- if .Values.podArgs }}
+        args:
+{{ toYaml .Values.podArgs | indent 8 }}
+{{- end }}
         env:
 {{- range $pkey, $pval := .Values.env }}
         - name: {{ $pkey }}
