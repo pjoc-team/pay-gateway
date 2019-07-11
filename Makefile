@@ -10,6 +10,8 @@ PKGS := $(shell go list ./... | grep -v /vendor | grep -v generated)
 BUILDFLAGS := ''
 CGO_ENABLED = 0
 VENDOR_DIR=vendor
+GOPROXY=https://goproxy.io
+
 
 all: build
 
