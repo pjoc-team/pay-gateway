@@ -1,4 +1,4 @@
-name: Docker
+name: Builder
 
 on:
   push:
@@ -15,7 +15,7 @@ on:
 
 env:
   # TODO: Change variable to your image's name.
-  IMAGE_NAME: image
+  IMAGE_NAME: main
 
 jobs:
   # Run tests.
@@ -24,7 +24,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+#      - name: Download math result for build job
+#        uses: actions/download-artifact@v1
+#        with:
+#          name: bin
+
       - uses: actions/checkout@v2
+#      - uses: actions/cache@v1
+#        with:
+#          path: ~/go/pkg/mod
+#          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}
+#          restore-keys: |
+#            ${{ runner.os }}-go-
 
       - name: Run tests
         run: |
@@ -32,23 +43,37 @@ jobs:
             docker-compose --file docker-compose.test.yml build
             docker-compose --file docker-compose.test.yml run sut
           else
-            docker build . --file Dockerfile
+            chmod +x ./build.sh && ./build.sh
           fi
+
 
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/
   push:
     # Ensure test job passes before pushing image.
-    needs: test
+    needs:
+      - test
 
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
 
     steps:
+#      - name: Download math result for build job
+#        uses: actions/download-artifact@v1
+#        with:
+#          name: bin
+
       - uses: actions/checkout@v2
 
+#      - uses: actions/cache@v1
+#        with:
+#          path: ~/go/pkg/mod
+#          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}
+#          restore-keys: |
+#            ${{ runner.os }}-go-
+
       - name: Build image
-        run: docker build . --file Dockerfile --tag image
+        run: chmod +x ./build.sh && ./build.sh
 
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin

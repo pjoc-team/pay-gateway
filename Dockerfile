@@ -1,18 +1,21 @@
-FROM alpine:latest as certs
-RUN apk --update add ca-certificates
+FROM golang:latest as build
 
-FROM golang:1.12
-COPY --from=certs /etc/ssl/certs/ /etc/ssl/certs/
-
+ARG repository
+ENV BUILD_PROJECT_PATH=${GOPATH}/src/${repository}
 ENV GO111MODULE=on
-ADD . /go/src/gitlab.com/pjoc-team/pay-gateway
-ADD config.yaml /app/
 
-RUN echo "path===${GOPATH}/src/$CI_PROJECT_PATH"
+RUN if [ -z "$repository" ]; then echo "repository arg is null!"; exit 1; else echo "path===${GOPATH}/src/$repository"; fi
 
-RUN mkdir -p /app && cd /go/src/gitlab.com/pjoc-team/pay-gateway && CGO_ENABLED=0 GOOS=linux go build -o /app/main .
+ADD . ${GOPATH}/src/${repository}
+
+RUN mkdir -p /app && cd ${BUILD_PROJECT_PATH} && CGO_ENABLED=0 GOOS=linux go build -o /app/main .
+
+FROM alpine:latest as certs
+RUN apk --update add ca-certificates && \
+        mkdir -p /app
+
+COPY --from=build /app/main /app/main
 
 WORKDIR /app
-#ADD ./bin/ /app/
 CMD ["/app/main"]
-EXPOSE 5000
+EXPOSE 8080

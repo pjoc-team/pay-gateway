@@ -1,3 +1,2 @@
-#!/usr/bin/env bash
-export GO111MODULE=on
-CGO_ENABLED=0 GOOS=linux go build -o ./bin/main .
+repository=`cat go.mod | grep -E "^module\s[0-9a-zA-Z\./_\-]+" | awk '{print $2}'`
+docker build --build-arg repository=$repository . -t image --file Dockerfile
