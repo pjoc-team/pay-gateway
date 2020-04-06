@@ -11,6 +11,7 @@ ADD . ${GOPATH}/src/${repository}
 RUN mkdir -p /app && cd ${BUILD_PROJECT_PATH} && CGO_ENABLED=0 GOOS=linux go build -o /app/main .
 
 FROM alpine:latest as certs
+#RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk --update add ca-certificates && \
         mkdir -p /app
 
