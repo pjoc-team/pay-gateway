@@ -1,7 +1,7 @@
 package gateway
 
 import (
-	"github.com/pjoc-team/base-service/pkg/util"
+	"github.com/blademainer/commons/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

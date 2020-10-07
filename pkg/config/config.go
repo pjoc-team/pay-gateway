@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/pjoc-team/pay-gateway/pkg/config/types"
-	tracinglogger "github.com/pjoc-team/tracing/logger"
+	"github.com/pjoc-team/tracing/logger"
 )
 
 //const (
@@ -55,7 +55,7 @@ func InitConfigServer(urlStr string) (Server, error) {
 // GetConfig 获取配置，将会把配置放置到ptr内，其中keys是主键（可以是多个）
 func (s *defaultServer) UnmarshalGetConfig(ctx context.Context, ptr interface{}, keys ...string) error {
 	err := s.backend.UnmarshalGetConfig(ctx, ptr, keys...)
-	log := tracinglogger.ContextLog(ctx)
+	log := logger.ContextLog(ctx)
 	if err != nil {
 		log.Errorf("failed to get config: %v error: %v", keys, err.Error())
 	} else {

@@ -8,8 +8,7 @@ import (
 	"github.com/pjoc-team/pay-gateway/pkg/constant"
 	"github.com/pjoc-team/pay-gateway/pkg/date"
 	pb "github.com/pjoc-team/pay-proto/go"
-	tracinglogger "github.com/pjoc-team/tracing/logger"
-	"time"
+	"github.com/pjoc-team/tracing/logger"
 )
 
 func (svc *PayGatewayService) SavePayOrder(ctx context.Context, requestContext *RequestContext) (*pb.ReturnResult, error) {
@@ -28,25 +27,19 @@ func (svc *PayGatewayService) SavePayOrder(ctx context.Context, requestContext *
 	basePayOrder.CreateDate = date.NowDate()
 	basePayOrder.ChannelAccount = requestContext.ChannelAccount
 
-	if serviceClient, e := svc.GetDatabaseClient(); e != nil {
-		tracinglogger.ContextLog(ctx).Errorf("Failed to init database client! error: %s", e.Error())
-		return nil, e
+	if result, err := svc.dbServiceClient.SavePayOrder(ctx, order); err != nil {
+		logger.ContextLog(ctx).Errorf("Failed to save order: %v returns error: %s", order, err.Error())
+		return nil, err
 	} else {
-		timeout, _ := context.WithTimeout(context.TODO(), 10*time.Second)
-		if result, err := serviceClient.SavePayOrder(timeout, order); err != nil {
-			tracinglogger.ContextLog(ctx).Errorf("Failed to save order: %v returns error: %s", order, err.Error())
-			return nil, err
-		} else {
-			tracinglogger.ContextLog(ctx).Infof("Save db result: %v", result)
-			return result, nil
-		}
+		logger.ContextLog(ctx).Infof("Save db result: %v", result)
+		return result, nil
 	}
 }
 
 func (svc *PayGatewayService) UpdatePayOrder(ctx context.Context, requestContext *RequestContext) (result *pb.ReturnResult, err error) {
 	if requestContext.ChannelPayResponse == nil {
-		tracinglogger.ContextLog(ctx).Errorf("Failed to update pay order! because channel response is null!")
-		err = errors.New("failed update pay order!")
+		logger.ContextLog(ctx).Errorf("Failed to update pay order! because channel response is null!")
+		err = errors.New("failed update pay order")
 		return
 	}
 	order := requestContext.PayOrder
@@ -56,7 +49,7 @@ func (svc *PayGatewayService) UpdatePayOrder(ctx context.Context, requestContext
 
 	if strings := requestContext.ChannelPayResponse.Data; strings != nil {
 		if channelResponseJson, err := json.Marshal(strings); err != nil {
-			tracinglogger.ContextLog(ctx).Errorf("Failed to marshal object: %v to json! error: %v", strings, err.Error())
+			logger.ContextLog(ctx).Errorf("Failed to marshal object: %v to json! error: %v", strings, err.Error())
 		} else {
 			order.BasePayOrder.ChannelResponseJson = string(channelResponseJson)
 		}
@@ -64,18 +57,12 @@ func (svc *PayGatewayService) UpdatePayOrder(ctx context.Context, requestContext
 
 	svc.presentChannelErrorMessage(requestContext)
 
-	if serviceClient, e := svc.GetDatabaseClient(); e != nil {
-		tracinglogger.ContextLog(ctx).Errorf("Failed to init database client! error: %s", e.Error())
-		return nil, e
+	if result, err := svc.dbServiceClient.UpdatePayOrder(ctx, order); err != nil {
+		logger.ContextLog(ctx).Errorf("Failed to save order: %v returns error: %s", order, err.Error())
+		return nil, err
 	} else {
-		timeout, _ := context.WithTimeout(context.TODO(), 10*time.Second)
-		if result, err := serviceClient.UpdatePayOrder(timeout, order); err != nil {
-			tracinglogger.ContextLog(ctx).Errorf("Failed to save order: %v returns error: %s", order, err.Error())
-			return nil, err
-		} else {
-			tracinglogger.ContextLog(ctx).Infof("Save db result: %v", result)
-			return result, nil
-		}
+		logger.ContextLog(ctx).Infof("Save db result: %v", result)
+		return result, nil
 	}
 }
 

@@ -1,32 +1,34 @@
 package gateway
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/copier"
-	"github.com/pjoc-team/base-service/pkg/logger"
 	"github.com/pjoc-team/pay-proto/go"
+	"github.com/pjoc-team/tracing/logger"
 )
 
-func (svc *PayGatewayService) GenerateChannelPayRequest(ctx *RequestContext) (channelPayRequest *pay.ChannelPayRequest, err error) {
-	request := ctx.PayRequest
+func (svc *PayGatewayService) GenerateChannelPayRequest(ctx context.Context, requestContext *RequestContext) (channelPayRequest *pay.ChannelPayRequest, err error) {
+	log := logger.ContextLog(ctx)
+	request := requestContext.PayRequest
 	channelPayRequest = &pay.ChannelPayRequest{}
 	if err = copier.Copy(channelPayRequest, request); err != nil {
-		logger.Log.Errorf("Failed to copy struct from %v! error: %s", request, err.Error())
+		log.Errorf("Failed to copy struct from %v! error: %s", request, err.Error())
 		return
 	}
-	channelPayRequest.GatewayOrderId = ctx.GatewayOrderId
+	channelPayRequest.GatewayOrderId = requestContext.GatewayOrderId
 
-	if svc.PayConfig.NotifyUrlPattern == "" {
-		logger.Log.Errorf("NotifyUrlPattern is null!!!")
+	if svc.payConfig.NotifyUrlPattern == "" {
+		log.Errorf("NotifyUrlPattern is null!!!")
 	}
-	if svc.PayConfig.ReturnUrlPattern == "" {
-		logger.Log.Errorf("ReturnUrlPattern is null!!!")
+	if svc.payConfig.ReturnUrlPattern == "" {
+		log.Errorf("ReturnUrlPattern is null!!!")
 	}
 	// reset notify url
-	channelPayRequest.NotifyUrl = ReplaceGatewayOrderId(svc.PayConfig.NotifyUrlPattern, channelPayRequest.GatewayOrderId)
-	channelPayRequest.ReturnUrl = ReplaceGatewayOrderId(svc.PayConfig.ReturnUrlPattern, channelPayRequest.GatewayOrderId)
-	channelPayRequest.ChannelAccount = ctx.ChannelAccount
+	channelPayRequest.NotifyUrl = ReplaceGatewayOrderId(svc.payConfig.NotifyUrlPattern, channelPayRequest.GatewayOrderId)
+	channelPayRequest.ReturnUrl = ReplaceGatewayOrderId(svc.payConfig.ReturnUrlPattern, channelPayRequest.GatewayOrderId)
+	channelPayRequest.ChannelAccount = requestContext.ChannelAccount
 	channelPayRequest.PayAmount = request.GetPayAmount()
 	product := &pay.Product{}
 	product.Id = request.ProductId
@@ -39,7 +41,7 @@ func (svc *PayGatewayService) GenerateChannelPayRequest(ctx *RequestContext) (ch
 		meta := make(map[string]string)
 		if err = json.Unmarshal([]byte(extJson), &meta); err != nil {
 			err = fmt.Errorf("failed to unmarshal json: %v error: %s", extJson, err.Error())
-			logger.Log.Errorf(err.Error())
+			log.Errorf(err.Error())
 			return
 		} else {
 			channelPayRequest.Meta = meta

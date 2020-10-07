@@ -1,20 +1,20 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"github.com/go-playground/validator/v10"
-	"github.com/pjoc-team/pay-gateway/pkg/config"
-	"github.com/pjoc-team/pay-gateway/pkg/gateway"
-	tracinglogger "github.com/pjoc-team/tracing/logger"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	wired "github.com/pjoc-team/pay-gateway/cmd"
+	pay "github.com/pjoc-team/pay-proto/go"
+	"github.com/pjoc-team/tracing/logger"
 	"google.golang.org/grpc"
-	"math/rand"
-	"time"
 )
 
 type initConfig struct {
-	configURI string `validate:"url"`
-	clusterID string `validate:"required"`
-	concurrency int `validate:"gt=0"`
+	configURI   string `validate:"url"`
+	clusterID   string `validate:"required"`
+	concurrency int    `validate:"gt=0"`
 }
 
 func init() {
@@ -29,9 +29,8 @@ var (
 
 func main() {
 	flag.Parse()
-	rand.Seed(int64(time.Now().Nanosecond()))
 
-	log := tracinglogger.Log()
+	log := logger.Log()
 
 	validate := validator.New()
 	err := validate.Struct(c)
@@ -39,9 +38,20 @@ func main() {
 		log.Fatalf("illegal configs, error: %v", err.Error())
 	}
 
-	server, err := config.InitConfigServer(c.configURI)
-
-	payGateway, err := gateway.NewPayGateway(server, c.clusterID, c.concurrency)
-
-
+	payGateway, err := wired.NewPayGateway(c.clusterID, c.concurrency)
+	s, err := wired.NewServer("pay-gateway", &wired.GrpcInfo{
+		RegisterGrpcFunc: func(ctx context.Context, server *grpc.Server) error {
+			pay.RegisterPayGatewayServer(server, payGateway)
+			return nil
+		},
+		RegisterGatewayFunc: func(ctx context.Context, mux *runtime.ServeMux) error {
+			err := pay.RegisterPayGatewayHandlerServer(ctx, mux, payGateway)
+			return err
+		},
+		Name: "pay-gateway",
+	})
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	s.Start()
 }

@@ -2,7 +2,7 @@ package gateway
 
 import (
 	"fmt"
-	"github.com/pjoc-team/base-service/pkg/logger"
+	"github.com/pjoc-team/tracing/logger"
 	"regexp"
 	"strings"
 )
@@ -19,7 +19,7 @@ func ReplaceGatewayOrderId(urlPattern string, gatewayOrderId string) string {
 
 func ReplacePlaceholder(urlPattern string, placeHolderName string, parameter string) (string, error) {
 	if compile, e := GetPlaceholderRegex(placeHolderName); e != nil {
-		logger.Log.Errorf("Regex error: %v", e.Error())
+		logger.Log().Errorf("Regex error: %v", e.Error())
 		return "", e
 	} else {
 		result := compile.ReplaceAll([]byte(urlPattern), []byte(parameter))
@@ -33,7 +33,7 @@ func GetPlaceholderRegex(placeHolderName string) (*regexp.Regexp, error) {
 	}
 	pattern := fmt.Sprintf("\\{\\s*%s\\s*\\}", placeHolderName)
 	if compile, e := regexp.Compile(pattern); e != nil {
-		logger.Log.Errorf("Regex error: %v", e.Error())
+		logger.Log().Errorf("Regex error: %v", e.Error())
 		return nil, e
 	} else {
 		regexMap[placeHolderName] = compile

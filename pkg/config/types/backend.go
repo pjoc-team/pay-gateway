@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"github.com/pjoc-team/tracing/logger"
 	"net/url"
 	"reflect"
 )
@@ -62,6 +63,8 @@ type Backend interface {
 
 // RegisterBackendOrDie 注册后端实现
 func RegisterBackendOrDie(provider Provider, initFunc InitFunc, options ...Option) error {
+	log := logger.Log()
+
 	_, ok := backends[provider]
 	if ok {
 		panic(fmt.Sprintf("provider: %v is already registered, func: %v", provider, reflect.ValueOf(initFunc)))
