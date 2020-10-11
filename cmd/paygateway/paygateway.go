@@ -8,6 +8,7 @@ import (
 	wired "github.com/pjoc-team/pay-gateway/cmd"
 	pay "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
+	"github.com/spf13/pflag"
 	"google.golang.org/grpc"
 )
 
@@ -23,13 +24,19 @@ func init() {
 	flag.IntVar(&c.concurrency, "concurrency", 10000, "max concurrency order request per seconds")
 }
 
+func flagSet() *pflag.FlagSet {
+	set := pflag.NewFlagSet("pay-gateway", pflag.ExitOnError)
+	set.StringVar(&c.configURI, "config-uri", "file://./pay-gateway.yaml", "pay gateway config uri")
+	set.StringVar(&c.clusterID, "cluster-id", "01", "cluster id for multiply cluster")
+	set.IntVar(&c.concurrency, "concurrency", 10000, "max concurrency order request per seconds")
+	return set
+}
+
 var (
 	c = &initConfig{}
 )
 
 func main() {
-	flag.Parse()
-
 	log := logger.Log()
 
 	validate := validator.New()
@@ -53,5 +60,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	s.Start()
+	set := flagSet()
+	s.Start(wired.WithFlagSet(set))
 }

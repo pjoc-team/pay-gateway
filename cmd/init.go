@@ -12,6 +12,8 @@ import (
 	"github.com/pjoc-team/tracing/tracing"
 	"github.com/pjoc-team/tracing/tracinggrpc"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
@@ -23,6 +25,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -43,9 +46,16 @@ type Server struct {
 }
 
 type options struct {
+	listen         string
+	listenHTTP     string
+	listenInternal string
+	network        string
+	logLevel       string
+
 	name              string
 	infos             []*GrpcInfo
 	shutdownFunctions []ShutdownFunction
+	flagSet           []*pflag.FlagSet
 }
 
 func (o *options) apply(options ...Option) {
@@ -72,6 +82,12 @@ func WithGrpc(info *GrpcInfo) Option {
 	}
 }
 
+func WithFlagSet(flagSet *pflag.FlagSet) Option {
+	return func(o *options) {
+		o.flagSet = append(o.flagSet, flagSet)
+	}
+}
+
 func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 	o := &options{
 		name:  name,
@@ -83,11 +99,76 @@ func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 	return s, nil
 }
 
+func wordSepNormalizeFunc(f *pflag.FlagSet, name string) pflag.NormalizedName {
+	from := []string{"-", "_"}
+	to := "."
+	for _, sep := range from {
+		name = strings.Replace(name, sep, to, -1)
+	}
+	return pflag.NormalizedName(name)
+}
+
+func (s *Server) flags() *pflag.FlagSet {
+	flagSet := pflag.NewFlagSet("common", pflag.PanicOnError)
+	flagSet.SetNormalizeFunc(wordSepNormalizeFunc)
+	flagSet.StringVar(&s.o.listen, "listen", ":9090", "listen of the gRPC service")
+	flagSet.StringVar(&s.o.listenHTTP, "listenHTTP", ":8080", "listen of the http service")
+	flagSet.StringVar(&s.o.listenInternal, "listenInternal", ":8081", "listen of the internal http service")
+	flagSet.StringVar(&s.o.network, "network", "tcp", "network ")
+	flagSet.StringVar(&s.o.logLevel, "log-level", "debug", "log level")
+	for _, p := range s.o.flagSet {
+		flagSet.AddFlagSet(p)
+	}
+	return flagSet
+}
+
 func (s *Server) Start(opts ...Option) {
 	rand.Seed(int64(time.Now().Nanosecond()))
-
 	s.o.apply(opts...)
+	flags := s.flags()
+	cmd := cobra.Command{
+		Use:                "",
+		Short:              "",
+		Long:               "",
+		DisableFlagParsing: true,
+		Run:                s.runFunc(flags),
+	}
+	if err := cmd.Execute(); err != nil {
+		logger.Log().Fatal(err.Error())
+	}
+}
 
+func (s *Server) runFunc(flagSet *pflag.FlagSet) func(cmd *cobra.Command, args []string) {
+	log := logger.Log()
+	return func(cmd *cobra.Command, args []string) {
+		if err := flagSet.Parse(args); err != nil {
+			cmd.Usage()
+			log.Fatal(err.Error())
+		}
+
+		// check if there are non-flag arguments in the command line
+		cmds := flagSet.Args()
+
+		if len(cmds) > 0 {
+			cmd.Usage()
+			log.Fatalf("unknown command: %s", cmds[0])
+		}
+		log.Infof("flags: %v", flagSet)
+
+		// short-circuit on help
+		help, _ := flagSet.GetBool("help")
+		//if err != nil {
+		//	logger.Fatalf(`"help" flag is non-bool, programmer error, please correct. error: %v`, err.Error())
+		//}
+		if help {
+			cmd.Help()
+			return
+		}
+		s.run()
+	}
+}
+
+func (s *Server) run() {
 	log := logger.Log()
 	if len(s.o.infos) == 0 {
 		log.Fatal("no grpc infos")
