@@ -1,0 +1,11 @@
+POST http://127.0.0.1:8080/v1/pay/WEB
+Content-Type: application/json
+
+{
+  "out_trade_no": "123",
+  "pay_amount": 1,
+  "app_id": "1",
+  "sign_type": "RSA",
+  "sign": "123",
+  "order_time": "2020-10-25T15:04:05.999999999+08:00"
+}

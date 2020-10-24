@@ -157,9 +157,9 @@ func (s *Server) runFunc(flagSet *pflag.FlagSet) func(cmd *cobra.Command, args [
 
 		// short-circuit on help
 		help, _ := flagSet.GetBool("help")
-		//if err != nil {
+		// if err != nil {
 		//	logger.Fatalf(`"help" flag is non-bool, programmer error, please correct. error: %v`, err.Error())
-		//}
+		// }
 		if help {
 			cmd.Help()
 			return
@@ -239,10 +239,10 @@ func InitLoggerAndTracing(serviceName string) {
 	if err2 != nil {
 		log.Fatalf("failed to init tracing, error: %v", err2.Error())
 	}
-	//err2 = tracing.InitOnlyTracingLog("drive")
-	//if err2 != nil {
+	// err2 = tracing.InitOnlyTracingLog("drive")
+	// if err2 != nil {
 	//	logger.Fatalf(err2.Error())
-	//}
+	// }
 	// 需要打印调用来源的日志级别
 	err2 = logger.MinReportCallerLevel(level)
 	if err2 != nil {
@@ -279,6 +279,21 @@ func (s *Server) initGrpc() {
 		)),
 	)
 
+	// init grpc gateway
+	marshaler := &runtime.JSONPb{
+		EnumsAsInts:  false, // 枚举类使用string返回
+		OrigName:     true,  // 使用json tag里面的字段
+		EmitDefaults: true,  // json返回零值
+	}
+	mux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler),
+		runtime.WithMetadata(metadata.ParseHeaderAndQueryToMD),
+		runtime.WithProtoErrorHandler(func(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
+			log := logger.ContextLog(ctx)
+			log.Errorf("proto error: %v request: %#v", err.Error(), request)
+		}),
+	)
+
 	// init grpc
 	g.Go(func() error {
 		log.Infof("grpc listen %s", *listen)
@@ -302,7 +317,7 @@ func (s *Server) initGrpc() {
 		}
 
 		for k, serviceInfo := range gs.GetServiceInfo() {
-			//logger.Infof("services name: %v info: %v", k, serviceInfo.Metadata, serviceInfo.Methods)
+			// logger.Infof("services name: %v info: %v", k, serviceInfo.Metadata, serviceInfo.Methods)
 			for _, method := range serviceInfo.Methods {
 				log.Infof("services name: %v info: %v method: %v", k, serviceInfo.Metadata, method.Name)
 			}
@@ -359,15 +374,6 @@ func (s *Server) initGrpc() {
 
 	// grpc gateway
 	g.Go(func() error {
-		marshaler := &runtime.JSONPb{
-			EnumsAsInts:  false, // 枚举类使用string返回
-			OrigName:     true,  // 使用json tag里面的字段
-			EmitDefaults: true,  // json返回零值
-		}
-		mux := runtime.NewServeMux(
-			runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler),
-			runtime.WithMetadata(metadata.ParseHeaderAndQueryToMD),
-		)
 
 		// register grpc gateway services
 		for k, registerGrpc := range GrpcServices {
