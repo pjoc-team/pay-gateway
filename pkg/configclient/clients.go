@@ -11,7 +11,7 @@ import (
 // ConfigClients 所有配置
 type ConfigClients interface {
 	// GetAppChannelConfig 获取渠道配置
-	GetAppChannelConfig(ctx context.Context, appId string, method string) (*AppIDChannelConfig, error)
+	GetAppChannelConfig(ctx context.Context, appId string, method string) ([]*AppIDChannelConfig, error)
 
 	// GetAppConfig 获取应用配置
 	GetAppConfig(ctx context.Context, appId string) (*MerchantConfig, error)
@@ -26,7 +26,7 @@ type configClients struct {
 	MerchantConfigServer       *configClient
 	PersonalMerchantServer     *configClient
 	AppIdChannelConfigServer   *configClient
-	FlagSet                    pflag.FlagSet
+	FlagSet                    *pflag.FlagSet
 }
 
 // configClient 包装配置，简化获取配置函数
@@ -49,28 +49,11 @@ func (c *configClient) UnmarshalGetConfig(ctx context.Context, ptr interface{}, 
 	return c.s.UnmarshalGetConfig(ctx, ptr, keys...)
 }
 
-// newConfigClient 使用url创建配置客户端
-func newConfigClient(url ConfigURL) (*configClient, error) {
-	c := &configClient{
-		configURL: url,
-		url:       url.URL(),
-	}
-	if url.URL() != "" {
-		server, err := config.InitConfigServer(url.URL())
-		if err != nil {
-			return nil, err
-		}
-		c.s = server
-	}
-
-	return c, nil
-}
-
 // NewConfigClients 创建配置
-func NewConfigClients(opts ...Option) (ConfigClients, error) {
+func NewConfigClients(opts ...Option) (ConfigClients, *pflag.FlagSet, error) {
 	o, err := newOpts()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	o.apply(opts...)
 
@@ -78,8 +61,33 @@ func NewConfigClients(opts ...Option) (ConfigClients, error) {
 
 	err = c.initConfigs(o)
 	if err != nil {
+		return nil, nil, err
+	}
+
+	return c, c.FlagSet, nil
+}
+
+// newConfigClient 使用url创建配置客户端
+func newConfigClient(url ConfigURL) (*configClient, error) {
+	log := logger.Log()
+	c := &configClient{
+		configURL: url,
+		url:       url.URL(),
+	}
+	if !c.configURL.Required() {
+		return c, nil
+	}
+	if url.URL() == "" {
+		err := fmt.Errorf("config is not initialized, please add flag: %v", c.configURL.Flag())
+		log.Fatal(err.Error())
 		return nil, err
 	}
+	server, err := config.InitConfigServer(url.URL())
+	if err != nil {
+		log.Fatalf("failed to init config client: %v url: %v error: %v", url.Flag(), url.URL(), err.Error())
+		return nil, err
+	}
+	c.s = server
 
 	return c, nil
 }
@@ -126,13 +134,15 @@ func (c *configClients) initConfigs(o *options) error {
 		return err
 	}
 	c.AppIdChannelConfigServer = client
+
+	c.FlagSet = o.ps
 	return nil
 }
 
-func (c *configClients) GetAppChannelConfig(ctx context.Context, appId string, method string) (*AppIDChannelConfig, error) {
+func (c *configClients) GetAppChannelConfig(ctx context.Context, appId string, method string) ([]*AppIDChannelConfig, error) {
 	log := logger.ContextLog(ctx)
-	appConfig := &AppIDChannelConfig{}
-	err := c.AppIdChannelConfigServer.UnmarshalGetConfig(ctx, appConfig, appId, method)
+	appConfig := make([]*AppIDChannelConfig, 0)
+	err := c.AppIdChannelConfigServer.UnmarshalGetConfig(ctx, &appConfig, appId, method)
 	if err != nil {
 		log.Errorf("failed to get channel config of appID: %v method: %v error: %v", appId, method, err.Error())
 		return nil, err

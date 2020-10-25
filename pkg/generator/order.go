@@ -26,6 +26,9 @@ type Generator struct {
 const ZeroByte = byte('0')
 
 func New(clusterId string, concurrency int) *Generator {
+	if concurrency <= 0 {
+		panic("concurrency must greater than 0")
+	}
 	g := &Generator{}
 	id := fmt.Sprint(getIdentityId())
 	g.MachineId = id

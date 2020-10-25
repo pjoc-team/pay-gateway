@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"flag"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	_ "github.com/pjoc-team/pay-gateway/pkg/config/file"
 	"github.com/pjoc-team/pay-gateway/pkg/metadata"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
@@ -30,13 +30,13 @@ import (
 	"time"
 )
 
-var (
-	listen         = flag.String("listen", ":9090", "listen of the gRPC service")
-	listenHTTP     = flag.String("listenHTTP", ":8080", "listen of the http service")
-	listenInternal = flag.String("listenInternal", ":8081", "listen of the internal http service")
-	network        = flag.String("network", "tcp", "network ")
-	logLevel       = flag.String("log-level", "debug", "log level")
-)
+//var (
+//	listen         = flag.String("listen", ":9090", "listen of the gRPC service")
+//	listenHTTP     = flag.String("listenHTTP", ":8080", "listen of the http service")
+//	listenInternal = flag.String("listenInternal", ":8081", "listen of the internal http service")
+//	network        = flag.String("network", "tcp", "network ")
+//	logLevel       = flag.String("log-level", "debug", "log level")
+//)
 
 type Server struct {
 	o                 *options
@@ -82,13 +82,13 @@ func WithGrpc(info *GrpcInfo) Option {
 	}
 }
 
-func WithFlagSet(flagSet *pflag.FlagSet) Option {
-	return func(o *options) {
-		o.flagSet = append(o.flagSet, flagSet)
-	}
-}
+//func WithFlagSet(flagSet *pflag.FlagSet) Option {
+//	return func(o *options) {
+//		o.flagSet = append(o.flagSet, flagSet)
+//	}
+//}
 
-func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
+func NewServer(name string, infos ...*GrpcInfo) (*Server, *pflag.FlagSet, error) {
 	o := &options{
 		name:  name,
 		infos: infos,
@@ -96,12 +96,13 @@ func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 	s := &Server{
 		o: o,
 	}
-	return s, nil
+	fs := s.flags()
+	return s, fs, nil
 }
 
 func wordSepNormalizeFunc(f *pflag.FlagSet, name string) pflag.NormalizedName {
-	from := []string{"-", "_"}
-	to := "."
+	from := []string{"_", "."}
+	to := "-"
 	for _, sep := range from {
 		name = strings.Replace(name, sep, to, -1)
 	}
@@ -109,11 +110,11 @@ func wordSepNormalizeFunc(f *pflag.FlagSet, name string) pflag.NormalizedName {
 }
 
 func (s *Server) flags() *pflag.FlagSet {
-	flagSet := pflag.NewFlagSet("common", pflag.PanicOnError)
+	flagSet := pflag.NewFlagSet("service", pflag.PanicOnError)
 	flagSet.SetNormalizeFunc(wordSepNormalizeFunc)
 	flagSet.StringVar(&s.o.listen, "listen", ":9090", "listen of the gRPC service")
-	flagSet.StringVar(&s.o.listenHTTP, "listenHTTP", ":8080", "listen of the http service")
-	flagSet.StringVar(&s.o.listenInternal, "listenInternal", ":8081", "listen of the internal http service")
+	flagSet.StringVar(&s.o.listenHTTP, "listen-http", ":8080", "listen of the http service")
+	flagSet.StringVar(&s.o.listenInternal, "listen-internal", ":8081", "listen of the internal http service")
 	flagSet.StringVar(&s.o.network, "network", "tcp", "network ")
 	flagSet.StringVar(&s.o.logLevel, "log-level", "debug", "log level")
 	for _, p := range s.o.flagSet {
@@ -145,6 +146,8 @@ func (s *Server) runFunc(flagSet *pflag.FlagSet) func(cmd *cobra.Command, args [
 			cmd.Usage()
 			log.Fatal(err.Error())
 		}
+
+		s.InitLoggerAndTracing(s.o.name)
 
 		// check if there are non-flag arguments in the command line
 		cmds := flagSet.Args()
@@ -185,7 +188,6 @@ func (s *Server) run() {
 	s.ctx = ctx
 	s.g = g
 
-	InitLoggerAndTracing(s.o.name)
 	s.initGrpc()
 
 	// signal
@@ -215,14 +217,14 @@ func (s *Server) run() {
 	}
 }
 
-func InitLoggerAndTracing(serviceName string) {
+func (s *Server) InitLoggerAndTracing(serviceName string) {
 	// setting logger
 	log := logger.ContextLog(nil)
-	level, err2 := logger.ParseLevel(*logLevel)
+	level, err2 := logger.ParseLevel(s.o.logLevel)
 	if err2 != nil {
 		log.Fatalf("failed to setting level: %v", err2.Error())
 	}
-	log.Infof("log level: %v", *logLevel)
+	log.Infof("log level: %v", s.o.logLevel)
 	err2 = logger.SetLevel(level)
 	if err2 != nil {
 		log.Fatalf("failed to setting level: %v", err2.Error())
@@ -293,8 +295,8 @@ func (s *Server) initGrpc() {
 
 	// init grpc
 	g.Go(func() error {
-		log.Infof("grpc listen %s", *listen)
-		l, err := net.Listen(*network, *listen)
+		log.Infof("grpc listen %s", s.o.listen)
+		l, err := net.Listen(s.o.network, s.o.listen)
 		if err != nil {
 			return err
 		}
@@ -326,7 +328,7 @@ func (s *Server) initGrpc() {
 			gs.GracefulStop()
 
 			if err := l.Close(); err != nil {
-				log.Errorf("Failed to close %s %s, err: %v", *network, *listen, err)
+				log.Errorf("Failed to close %s %s, err: %v", s.o.network, s.o.listen, err)
 			}
 		})
 
@@ -335,16 +337,16 @@ func (s *Server) initGrpc() {
 
 	// http admin
 	g.Go(func() error {
-		log.Infof("admin listen %s", *listenInternal)
-		listen, err := net.Listen("tcp", *listenInternal)
+		log.Infof("admin listen %s", s.o.listenInternal)
+		listen, err := net.Listen("tcp", s.o.listenInternal)
 		if err != nil {
-			log.Errorf("failed to listen: %v error: %v", *listenInternal, err.Error())
+			log.Errorf("failed to listen: %v error: %v", s.o.listenInternal, err.Error())
 			return err
 		}
 		s.shutdownFunctions = append(s.shutdownFunctions, func(ctx context.Context) {
 			err2 := listen.Close()
 			if err2 != nil {
-				log.Errorf("failed to close: %v error: %v", *listenInternal, err2.Error())
+				log.Errorf("failed to close: %v error: %v", s.o.listenInternal, err2.Error())
 			} else {
 				log.Infof("http admin closed")
 			}
@@ -359,7 +361,7 @@ func (s *Server) initGrpc() {
 		}
 
 		httpServer := &http.Server{
-			Addr:         *listenInternal,
+			Addr:         s.o.listenInternal,
 			ReadTimeout:  10 * time.Second,
 			WriteTimeout: 10 * time.Second,
 			Handler:      tracingServerInterceptor(internalHTTPMux),
@@ -390,7 +392,7 @@ func (s *Server) initGrpc() {
 		}
 
 		hs := &http.Server{
-			Addr:    *listenHTTP,
+			Addr:    s.o.listenHTTP,
 			Handler: h,
 		}
 
@@ -400,7 +402,7 @@ func (s *Server) initGrpc() {
 			}
 		})
 
-		log.Infof("grpc gateway listen %s", *listenHTTP)
+		log.Infof("grpc gateway listen %s", s.o.listenHTTP)
 		if err := hs.ListenAndServe(); err != http.ErrServerClosed {
 			log.Errorf("Failed to listen and serve: %v", err)
 			return err

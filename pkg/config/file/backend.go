@@ -6,6 +6,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pjoc-team/pay-gateway/pkg/config/types"
+	"github.com/pjoc-team/tracing/logger"
 	"github.com/spf13/viper"
 	"strings"
 )
@@ -43,8 +44,10 @@ type fileBackend struct {
 }
 
 func (f *fileBackend) Start() error {
+	log := logger.Log()
 	err := f.v.ReadInConfig()
 	if err != nil {
+		log.Errorf(err.Error())
 		return err
 	}
 	f.decoderConfigOption = append(viperDecoderConfig(f.configType), decoderConfigOptions...)

@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"flag"
 	"fmt"
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/generator"
@@ -52,6 +51,7 @@ func (svc *PayGatewayService) Pay(ctx context.Context, request *pb.PayRequest) (
 	}
 	var cfg *configclient.AppIDChannelConfig
 	if cfg, err = svc.processChannelIdIfNotPresent(ctx, request); err != nil {
+		log.Error(err.Error())
 		err = fmt.Errorf("could'nt found config of channelId: %v", request.ChannelId)
 		return BuildParamsErrorResponse(err), nil
 	}
@@ -114,30 +114,29 @@ func (svc *PayGatewayService) Pay(ctx context.Context, request *pb.PayRequest) (
 func (svc *PayGatewayService) processChannelIdIfNotPresent(ctx context.Context, request *pb.PayRequest) (channelConfig *configclient.AppIDChannelConfig, err error) {
 	log := logger.ContextLog(ctx)
 
-	channelConfig, err = svc.configclients.GetAppChannelConfig(ctx, request.AppId, request.Method.String())
-	//if config.ChannelConfigs == nil {
-	//	err = fmt.Errorf("failed to found info of appId: %v", request.AppId)
-	//	return
-	//}
-	//for _, config := range config.ChannelConfigs {
-	//	found := (request.ChannelId != "" && request.ChannelId == config.ChannelId && config.Available) ||
-	//		(request.ChannelId == "" && config.Method == request.Method && config.Available)
-	//
-	//	if found {
-	//		channelConfig = config
-	//		log.Infof("find config: %v by request: %v", config, request)
-	//		return
-	//	}
-	//}
+	channelConfigs, err := svc.configclients.GetAppChannelConfig(ctx, request.AppId, request.Method.String())
 	if err != nil {
-		err = fmt.Errorf("could'nt found available channel of appId: %v method: %v", request.AppId, request.Method)
-		log.Errorf(err.Error())
+		err = fmt.Errorf("failed to found info of appId: %v", request.AppId)
+		return
+	} else if len(channelConfigs) == 0 {
+		err = fmt.Errorf("failed to get config of appID: %v method: %v", request.AppId, request.Method.String())
+		return
 	}
+
+	for _, config := range channelConfigs {
+		found := (request.ChannelId != "" && request.ChannelId == config.ChannelID && config.Available) ||
+			(request.ChannelId == "" && config.Method == request.Method.String() && config.Available)
+		if found {
+			channelConfig = config
+			log.Infof("find config: %v by request: %v", config, request)
+			return
+		}
+	}
+	err = fmt.Errorf("failed to get config of appID: %v method: %v", request.AppId, request.Method.String())
 	return
 }
 
 func NewPayGateway(cc configclient.ConfigClients, clusterID string, concurrency int, dbServiceClient pb.PayDatabaseServiceClient) (pb.PayGatewayServer, error) {
-	flag.Parse()
 	payGatewayService := &PayGatewayService{}
 	payGatewayService.configclients = cc
 	payGatewayService.orderGenerator = generator.New(clusterID, concurrency)

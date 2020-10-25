@@ -10,6 +10,7 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/spf13/pflag"
 	"google.golang.org/grpc"
+	"os"
 )
 
 const serviceName = "pay-gateway"
@@ -39,13 +40,25 @@ func main() {
 		log.Fatalf("illegal configs, error: %v", err.Error())
 	}
 
-	configClients, err := configclient.NewConfigClients(
+	configClients, configFlagSet, err := configclient.NewConfigClients(
 		configclient.WithMerchantConfigServer(true),
 		configclient.WithAppIdChannelConfigServer(true),
 	)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	s, fs, err := service.NewServer(serviceName)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	set := flagSet()
+	set.AddFlagSet(configFlagSet)
+	set.AddFlagSet(fs)
+	err = set.Parse(os.Args)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	payGateway, err := service.NewPayGateway(configClients, c.clusterID, c.concurrency)
 	grpcInfo := &service.GrpcInfo{
 		RegisterGrpcFunc: func(ctx context.Context, server *grpc.Server) error {
@@ -58,10 +71,5 @@ func main() {
 		},
 		Name: serviceName,
 	}
-	s, err := service.NewServer(serviceName, grpcInfo)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	set := flagSet()
-	s.Start(service.WithFlagSet(set))
+	s.Start(service.WithGrpc(grpcInfo))
 }

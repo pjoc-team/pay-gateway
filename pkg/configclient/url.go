@@ -27,60 +27,28 @@ type (
 type ConfigURL interface {
 	URL() string
 	Flag() string
+	Required() bool
 }
 
-func (u PayConfigServerURL) URL() string {
-	return string(u)
+// configURL 配置说明
+type configURL struct {
+	url      string
+	required bool
+	flag     string
 }
 
-func (u PayConfigServerURL) Flag() string {
-	return "pay-config-url"
+func (c configURL) URL() string {
+	return c.url
 }
 
-func (u NoticeConfigServerURL) URL() string {
-	return string(u)
+func (c configURL) Flag() string {
+	return c.flag
 }
 
-func (u NoticeConfigServerURL) Flag() string {
-	return "notice-config-url"
+func (c configURL) Required() bool {
+	return c.required
 }
 
-func (u ServiceConfigServerURL) URL() string {
-	return string(u)
-}
-
-func (u ServiceConfigServerURL) Flag() string {
-	return "service-config-url"
-}
-
-func (u ChannelServiceConfigServerURL) URL() string {
-	return string(u)
-}
-
-func (u ChannelServiceConfigServerURL) Flag() string {
-	return "channel-service-config-url"
-}
-
-func (u MerchantConfigServerURL) URL() string {
-	return string(u)
-}
-
-func (u MerchantConfigServerURL) Flag() string {
-	return "merchant-config-url"
-}
-
-func (u PersonalMerchantServerURL) URL() string {
-	return string(u)
-}
-
-func (u PersonalMerchantServerURL) Flag() string {
-	return "personal-merchant-url"
-}
-
-func (u AppIdChannelConfigServerURL) URL() string {
-	return string(u)
-}
-
-func (u AppIdChannelConfigServerURL) Flag() string {
-	return "app-id-channel-config-url"
+func newConfigURL(url string, required bool, flag string) *configURL {
+	return &configURL{url: url, required: required, flag: flag}
 }

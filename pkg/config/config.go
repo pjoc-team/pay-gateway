@@ -8,10 +8,6 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 )
 
-//const (
-//	urlPatternStr = "\\w+://(\\w+:\\w+@)*(\\w+.)*\\w+(\\?(\\w+=\\w+&)(\\w+=\\w+))*"
-//)
-
 // Server 配置服务
 type Server interface {
 	// GetConfig 获取配置并设置到ptr，keys是树形结构
@@ -45,6 +41,10 @@ func InitConfigServer(urlStr string) (Server, error) {
 	err = v.Struct(backend)
 	if err != nil {
 		panic(fmt.Sprintf("validate backend config error: %v a correct url is: '%v'", err.Error(), bf.Options.DemoURL))
+	}
+	err = backend.Start()
+	if err != nil {
+		return nil, err
 	}
 
 	s.backend = backend
