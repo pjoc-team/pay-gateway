@@ -1,4 +1,4 @@
-package wired
+package service
 
 import (
 	"context"

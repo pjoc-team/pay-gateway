@@ -1,17 +1,11 @@
 package model
 
+import "github.com/pjoc-team/pay-gateway/pkg/configclient"
+
 // ################## appid ##################
 type AppIdAndChannelConfigMap map[string]AppIdAndChannelConfigs
 
 type AppIdAndChannelConfigs struct {
-	AppId          string               `json:"app_id"`
-	ChannelConfigs []AppIdChannelConfig `json:"channel_configs"`
-}
-
-type AppIdChannelConfig struct {
-	RatePercent    float32 `json:"rate_percent"`
-	Method         string  `json:"method"`
-	ChannelAccount string  `json:"channel_account"`
-	Available      bool    `json:"available"`
-	ChannelId      string  `json:"channel_id"`
+	AppId          string                            `json:"app_id"`
+	ChannelConfigs []configclient.AppIDChannelConfig `json:"channel_configs"`
 }

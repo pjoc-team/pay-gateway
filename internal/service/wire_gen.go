@@ -3,26 +3,23 @@
 //go:generate wire
 //+build !wireinject
 
-package wired
+package service
 
 import (
 	"github.com/google/wire"
+	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/gateway"
 	"github.com/pjoc-team/pay-proto/go"
 )
 
 // Injectors from wire.go:
 
-func NewPayGateway(clusterID string, concurrency int) (pay.PayGatewayServer, error) {
-	configClients, err := InitConfigClients()
-	if err != nil {
-		return nil, err
-	}
+func NewPayGateway(configclients configclient.ConfigClients, clusterID string, concurrency int) (pay.PayGatewayServer, error) {
 	payDatabaseServiceClient, err := InitDbClient()
 	if err != nil {
 		return nil, err
 	}
-	payGatewayServer, err := gateway.NewPayGateway(configClients, clusterID, concurrency, payDatabaseServiceClient)
+	payGatewayServer, err := gateway.NewPayGateway(configclients, clusterID, concurrency, payDatabaseServiceClient)
 	if err != nil {
 		return nil, err
 	}
@@ -31,4 +28,4 @@ func NewPayGateway(clusterID string, concurrency int) (pay.PayGatewayServer, err
 
 // wire.go:
 
-var set = wire.NewSet(InitConfigClients, InitDbClient)
+var set = wire.NewSet(InitDbClient)

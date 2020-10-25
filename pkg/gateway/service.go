@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/generator"
-	"github.com/pjoc-team/pay-gateway/pkg/model"
 	"github.com/pjoc-team/pay-gateway/pkg/service"
 	"github.com/pjoc-team/pay-gateway/pkg/validator"
 	pb "github.com/pjoc-team/pay-proto/go"
@@ -16,8 +15,8 @@ import (
 type PayGatewayService struct {
 	dbServiceClient pb.PayDatabaseServiceClient
 	discovery       *service.Discovery
-	configclients   *configclient.ConfigClients
-	payConfig       *model.PayConfig
+	configclients   configclient.ConfigClients
+	payConfig       *configclient.PayConfig
 	orderGenerator  *generator.Generator
 }
 
@@ -51,7 +50,7 @@ func (svc *PayGatewayService) Pay(ctx context.Context, request *pb.PayRequest) (
 	if err = validator.Validate(ctx, *request, svc.configclients.GetAppConfig); err != nil {
 		return BuildParamsErrorResponse(err), nil
 	}
-	var cfg *model.AppIdChannelConfig
+	var cfg *configclient.AppIDChannelConfig
 	if cfg, err = svc.processChannelIdIfNotPresent(ctx, request); err != nil {
 		err = fmt.Errorf("could'nt found config of channelId: %v", request.ChannelId)
 		return BuildParamsErrorResponse(err), nil
@@ -112,10 +111,10 @@ func (svc *PayGatewayService) Pay(ctx context.Context, request *pb.PayRequest) (
 }
 
 // 如果没有传入channelId，则根据method找可用的channelId
-func (svc *PayGatewayService) processChannelIdIfNotPresent(ctx context.Context, request *pb.PayRequest) (channelConfig *model.AppIdChannelConfig, err error) {
+func (svc *PayGatewayService) processChannelIdIfNotPresent(ctx context.Context, request *pb.PayRequest) (channelConfig *configclient.AppIDChannelConfig, err error) {
 	log := logger.ContextLog(ctx)
 
-	channelConfig, err = svc.configclients.GetAppChannelConfig(request.AppId, request.Method.String())
+	channelConfig, err = svc.configclients.GetAppChannelConfig(ctx, request.AppId, request.Method.String())
 	//if config.ChannelConfigs == nil {
 	//	err = fmt.Errorf("failed to found info of appId: %v", request.AppId)
 	//	return
@@ -137,7 +136,7 @@ func (svc *PayGatewayService) processChannelIdIfNotPresent(ctx context.Context, 
 	return
 }
 
-func NewPayGateway(cc *configclient.ConfigClients, clusterID string, concurrency int, dbServiceClient pb.PayDatabaseServiceClient) (pb.PayGatewayServer, error) {
+func NewPayGateway(cc configclient.ConfigClients, clusterID string, concurrency int, dbServiceClient pb.PayDatabaseServiceClient) (pb.PayGatewayServer, error) {
 	flag.Parse()
 	payGatewayService := &PayGatewayService{}
 	payGatewayService.configclients = cc

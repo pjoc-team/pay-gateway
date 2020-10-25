@@ -10,7 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/blademainer/commons/pkg/util"
-	"github.com/pjoc-team/pay-gateway/pkg/model"
+	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/validator"
 	"github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
@@ -51,8 +51,8 @@ func NewCheckSignValidator() *CheckSignValidator {
 type CheckSignInterface interface {
 	checkSign(ctx context.Context, source []byte, signMsg string, key string) error
 	sign(ctx context.Context, source []byte, key string) (string, error)
-	getCheckSignKey(ctx context.Context, config *model.MerchantConfig) string
-	getSignKey(ctx context.Context, config *model.MerchantConfig) string
+	getCheckSignKey(ctx context.Context, config *configclient.MerchantConfig) string
+	getSignKey(ctx context.Context, config *configclient.MerchantConfig) string
 	signType() string
 }
 
@@ -63,7 +63,7 @@ func initCheckSignMap() {
 	checkSignMap[SIGN_TYPE_SHA256_WITH_RSA] = &Sha256WithRSA{}
 }
 
-func CheckSign(ctx context.Context, charset string, source string, signMsg string, config *model.MerchantConfig, signType string) (err error) {
+func CheckSign(ctx context.Context, charset string, source string, signMsg string, config *configclient.MerchantConfig, signType string) (err error) {
 	if signType == "" {
 		signType = SIGN_TYPE_SHA256_WITH_RSA
 	}
@@ -90,7 +90,7 @@ func CheckSign(ctx context.Context, charset string, source string, signMsg strin
 	}
 }
 
-func GenerateSign(ctx context.Context, charset string, source string, config *model.MerchantConfig, signType string) (sign string, err error) {
+func GenerateSign(ctx context.Context, charset string, source string, config *configclient.MerchantConfig, signType string) (sign string, err error) {
 	log := logger.ContextLog(ctx)
 	signFunc := checkSignMap[signType]
 	var sourceBytes []byte
@@ -118,11 +118,11 @@ func GenerateSign(ctx context.Context, charset string, source string, config *mo
 type Md5 struct {
 }
 
-func (m *Md5) getCheckSignKey(ctx context.Context, config *model.MerchantConfig) string {
+func (m *Md5) getCheckSignKey(ctx context.Context, config *configclient.MerchantConfig) string {
 	return config.Md5Key
 }
 
-func (m *Md5) getSignKey(ctx context.Context, config *model.MerchantConfig) string {
+func (m *Md5) getSignKey(ctx context.Context, config *configclient.MerchantConfig) string {
 	return config.Md5Key
 }
 
@@ -158,11 +158,11 @@ func (*Md5) signType() string {
 type Sha256WithRSA struct {
 }
 
-func (s *Sha256WithRSA) getCheckSignKey(ctx context.Context, config *model.MerchantConfig) string {
+func (s *Sha256WithRSA) getCheckSignKey(ctx context.Context, config *configclient.MerchantConfig) string {
 	return config.MerchantRSAPublicKey
 }
 
-func (s *Sha256WithRSA) getSignKey(ctx context.Context, config *model.MerchantConfig) string {
+func (s *Sha256WithRSA) getSignKey(ctx context.Context, config *configclient.MerchantConfig) string {
 	return config.GatewayRSAPrivateKey
 }
 

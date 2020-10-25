@@ -2,12 +2,12 @@ package validator
 
 import (
 	"context"
-	"github.com/pjoc-team/pay-gateway/pkg/model"
+	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 )
 
-type GetMerchantConfigFunc func(appID string) (*model.MerchantConfig, error)
+type GetMerchantConfigFunc func(ctx context.Context, appID string) (*configclient.MerchantConfig, error)
 
 type Validator interface {
 	Validate(ctx context.Context, request pay.PayRequest, cfg GetMerchantConfigFunc) error
@@ -20,7 +20,7 @@ func RegisterValidator(validator Validator) {
 	Validators = append(Validators, validator)
 }
 
-func Validate(ctx context.Context, request pay.PayRequest, cfg GetMerchantConfigFunc) error {
+func Validate(ctx context.Context, request pay.PayRequest, cfg func(ctx context.Context, appId string) (*configclient.MerchantConfig, error)) error {
 	for _, validator := range Validators {
 		if e := validator.Validate(ctx, request, cfg); e != nil {
 			return e

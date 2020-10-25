@@ -1,4 +1,4 @@
-package wired
+package service
 
 import (
 	"context"
@@ -288,10 +288,7 @@ func (s *Server) initGrpc() {
 	mux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler),
 		runtime.WithMetadata(metadata.ParseHeaderAndQueryToMD),
-		runtime.WithProtoErrorHandler(func(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
-			log := logger.ContextLog(ctx)
-			log.Errorf("proto error: %v request: %#v", err.Error(), request)
-		}),
+		runtime.WithProtoErrorHandler(protoErrorHandler),
 	)
 
 	// init grpc
