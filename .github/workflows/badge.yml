@@ -1,15 +1,13 @@
-name: 'badge'
-on: [push]
+name: Rainbow badges
+
+# runs after every push.
+on: push
 
 jobs:
-  test:
+  update-readme:
+    name: Update Readme with Rainbow badges
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - name: add badges
-        uses: rocktimsaikia/badge-it@master
+      - uses: Parply/readme-badge-colouriser@master
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          badges: 'gh_license,gh_version'
-          badge-style: 'flat-square'
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}

@@ -1,6 +1,9 @@
 # pay-gateway
 [![Builder](https://github.com/pjoc-team/pay-gateway/workflows/Builder/badge.svg)](https://github.com/pjoc-team/pay-gateway/actions)
 
+<!--START_SECTION:colourise-->
+<!--END_SECTION:colourise-->
+
 ## Docker
 
 [![Docker](https://img.shields.io/docker/v/pjoc/pay-gateway)](https://hub.docker.com/r/pjoc/pay-gateway/tags)
