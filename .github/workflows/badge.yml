@@ -1,0 +1,15 @@
+name: 'badge'
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: add badges
+        uses: rocktimsaikia/badge-it@master
+        with:
+          GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
+          badges: 'gh_license,gh_version'
+          badge-style: 'flat-square'
