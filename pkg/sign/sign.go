@@ -31,7 +31,7 @@ func (validator *CheckSignValidator) Validate(ctx context.Context, request pay.P
 	if log.IsDebugEnabled() {
 		log.Debugf("Build interface: %v to string: %v", request, paramsString)
 	}
-	if config, err := cfg(request.AppId); err != nil {
+	if config, err := cfg(ctx, request.AppId); err != nil {
 		e = fmt.Errorf("could'nt found config of appId: %v", request.AppId)
 		log.Errorf("couldn't found config of appId: %v request: %v", request.AppId, request)
 		return e

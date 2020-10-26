@@ -2,7 +2,7 @@ SHELL := /bin/bash
 GO := GO15VENDOREXPERIMENT=1 go
 NAME := pay-gateway
 OS := $(shell uname)
-MAIN_GO := main.go
+MAIN_GO := cmd/paygateway/paygateway.go
 ROOT_PACKAGE := $(GIT_PROVIDER)/pjoc-team/$(NAME)
 GO_VERSION := $(shell $(GO) version | sed -e 's/^[^0-9.]*\([0-9.]*\).*/\1/')
 PACKAGE_DIRS := $(shell $(GO) list ./... | grep -v /vendor/)
