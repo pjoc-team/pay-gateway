@@ -10,4 +10,4 @@ jobs:
     steps:
       - uses: Parply/readme-badge-colouriser@master
         with:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
