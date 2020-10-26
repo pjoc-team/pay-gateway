@@ -29,6 +29,8 @@ jobs:
 #        with:
 #          name: bin
 
+      - uses: creekorful/goreportcard-action@v1.0
+
       - uses: actions/checkout@v2
 #      - uses: actions/cache@v1
 #        with:

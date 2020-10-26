@@ -6,3 +6,13 @@
 - [docker](https://docker.com)
 - [goland](http://jetbrains.com/go)
 - [go-admin](https://github.com/GoAdminGroup/go-admin)
+
+## Collaborators
+
+<!-- readme: collaborators -start -->
+<!-- readme: collaborators -end -->
+
+## Contributors
+
+<!-- readme: contributors -start -->
+<!-- readme: contributors -end -->
