@@ -1,3 +1,4 @@
+name: contributors
 on: [push, pull_request]
 
 jobs:
