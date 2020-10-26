@@ -57,6 +57,7 @@ require (
 	gopkg.in/go-playground/assert.v1 v1.2.1
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	gopkg.in/yaml.v2 v2.2.7
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
 	rsc.io/quote/v3 v3.1.0 // indirect
 )

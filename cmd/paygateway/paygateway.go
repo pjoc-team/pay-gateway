@@ -60,6 +60,9 @@ func main() {
 	}
 
 	payGateway, err := service.NewPayGateway(configClients, c.clusterID, c.concurrency)
+	if err != nil{
+		log.Fatal(err.Error())
+	}
 	grpcInfo := &service.GrpcInfo{
 		RegisterGrpcFunc: func(ctx context.Context, server *grpc.Server) error {
 			pay.RegisterPayGatewayServer(server, payGateway)

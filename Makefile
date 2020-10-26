@@ -60,3 +60,8 @@ lint: vendor | $(PKGS) $(GOLINT) # ❷
 	    test -z "$$($(GOLINT) $$pkg | tee /dev/stderr)" || ret=1 ; \
 	done ; exit $$ret
 
+golangci_lint:
+	bash scripts/golangci_lint.sh
+
+golangci_lint_by_docker:
+	bash scripts/golangci_lint_by_docker.sh
