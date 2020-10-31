@@ -70,9 +70,9 @@ func CheckSign(ctx context.Context, charset string, source string, signMsg strin
 	log := logger.ContextLog(ctx)
 	signFunc := checkSignMap[signType]
 	var sourceBytes []byte
-	if key := signFunc.getCheckSignKey(nil, config); key == "" {
-		err = errors.New("could'nt found key!")
-		log.Errorf("Could'nt get key from config: %v", config)
+	if key := signFunc.getCheckSignKey(ctx, config); key == "" {
+		err = errors.New("couldn't found key")
+		log.Errorf("Couldn't get key from config: %v", config)
 		return err
 	} else if sourceBytes, err = stringToBytes(source, charset); err != nil {
 		log.Errorf("Failed to get charset: %s, error: %s", charset, err.Error())
@@ -83,7 +83,7 @@ func CheckSign(ctx context.Context, charset string, source string, signMsg strin
 		return e
 	} else if err = signFunc.checkSign(ctx, sourceBytes, signMsg, key); err != nil {
 		log.Errorf("Failed to check sign! error: %s", err.Error())
-		e := fmt.Errorf("failed to check sign!")
+		e := fmt.Errorf("failed to check sign")
 		return e
 	} else {
 		return nil
@@ -94,7 +94,7 @@ func GenerateSign(ctx context.Context, charset string, source string, config *co
 	log := logger.ContextLog(ctx)
 	signFunc := checkSignMap[signType]
 	var sourceBytes []byte
-	if key := signFunc.getSignKey(nil, config); key == "" {
+	if key := signFunc.getSignKey(ctx, config); key == "" {
 		err = errors.New("could'nt found key!")
 		log.Errorf("Could'nt get key from config: %v", config)
 		return

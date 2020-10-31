@@ -115,6 +115,9 @@ kQIDAQAB
 	signBase64 := string(base64.StdEncoding.EncodeToString(sign))
 	fmt.Println("signBase64: ", signBase64)
 	bytes, e := base64.StdEncoding.DecodeString(signBase64)
+	if e != nil {
+		fmt.Println("verify error: ", e.Error())
+	}
 	e = VerifyPKCS1v15([]byte(message), bytes, []byte(publicKey), crypto.SHA256)
 	if e != nil {
 		fmt.Println("verify error: ", e.Error())
