@@ -35,7 +35,6 @@ type BaseConfig struct {
 	key      string `json:"-"`
 	baseDir  string `json:"-"`
 	dirName  string `json:"-"`
-	fullPath string `json:"-"`
 }
 
 // ################## service ##################

@@ -51,7 +51,10 @@ func (g *Generator) Debug() {
 func getIdentityId() uint32 {
 	if name, err := os.Hostname(); err == nil {
 		h := fnv.New32()
-		h.Write([]byte(name))
+		_, err := h.Write([]byte(name))
+		if err != nil{
+			panic(err.Error())
+		}
 		sum32 := h.Sum32()
 		return sum32
 	} else {
@@ -70,7 +73,10 @@ func getIdentityId() uint32 {
 			}
 		}
 		h := fnv.New32()
-		h.Write([]byte(mac))
+		_, err := h.Write([]byte(mac))
+		if err != nil{
+			panic(err.Error())
+		}
 		sum32 := h.Sum32()
 		return sum32
 	}

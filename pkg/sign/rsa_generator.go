@@ -87,7 +87,7 @@ func savePEMKey(key *rsa.PrivateKey) (string, error) {
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	}
 
-	return pemToString(privateKey)
+	return PemToString(privateKey)
 }
 
 func savePEMPrivatePKCS1Key(privateKey *rsa.PrivateKey) (string, error) {
@@ -96,7 +96,7 @@ func savePEMPrivatePKCS1Key(privateKey *rsa.PrivateKey) (string, error) {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: asn1Bytes,
 	}
-	return pemToString(pemkey)
+	return PemToString(pemkey)
 }
 
 func savePublicPEMKey(pubkey rsa.PublicKey) (string, error) {
@@ -108,7 +108,7 @@ func savePublicPEMKey(pubkey rsa.PublicKey) (string, error) {
 			Bytes: asn1Bytes,
 		}
 
-		return pemToString(pemkey)
+		return PemToString(pemkey)
 	}
 }
 
@@ -120,12 +120,13 @@ func savePublicPKIXKey(pubkey rsa.PublicKey) (string, error) {
 			Type:  "PUBLIC KEY",
 			Bytes: asn1Bytes,
 		}
-		return pemToString(pemkey)
+		return PemToString(pemkey)
 	}
 
 }
 
-func pemToBytes(b *pem.Block) ([]byte, error) {
+// PemToBytes pem to byte array
+func PemToBytes(b *pem.Block) ([]byte, error) {
 	buffer := &bytes.Buffer{}
 	if err := pem.Encode(buffer, b); err != nil {
 		return nil, err
@@ -134,11 +135,12 @@ func pemToBytes(b *pem.Block) ([]byte, error) {
 	}
 }
 
-func pemToString(b *pem.Block) (string, error) {
+// PemToString pem to string
+func PemToString(b *pem.Block) (string, error) {
 	buffer := &bytes.Buffer{}
 	if err := pem.Encode(buffer, b); err != nil {
 		return "", err
 	} else {
-		return string(buffer.Bytes()), nil
+		return buffer.String(), nil
 	}
 }

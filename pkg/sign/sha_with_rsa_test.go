@@ -119,6 +119,9 @@ kQIDAQAB
 	if e != nil {
 		fmt.Println("verify error: ", e.Error())
 	}
+	if e != nil {
+		fmt.Println("verify error: ", e.Error())
+	}
 
 	//source := "app_id=1&channel_id=demo&method=test&order_time=2018-10-28 12:00:00&pay_amount=1&sign_type=RSA"
 	////signString := "OvsyKwWYeQdofkM0B9KwNpyajNBsd+yxle6EJzLxIE/2IrBICDwt77ydkd7NbYCsE9wfMH5ctNGCRfNhb58iqxZs+wjWz5t7KQNsJrQAWyz7lN8m0aHF7HcnH6XBdbjZ1FaaV9JSKF5DpVptneLD7jB5EsEaUC2b4u9hdc29j/HtLUWAaXNupxonM1DVZGn5JybhLZiWhLxBqzfDbkfshDTUdL0ZJdHWsn1FVFfWbAiAim8Sk4eLrhFP9NbnTL7GOgVgTnURlzZVeEhNd9vBT1cY2Gp51Nn2QREam0heb4UKG9n6fxAUxPCo3avQUhjvVSfxcKn8wz7qSHCNOYCquQ=="

@@ -30,13 +30,13 @@ import (
 	"time"
 )
 
-//var (
+// var (
 //	listen         = flag.String("listen", ":9090", "listen of the gRPC service")
 //	listenHTTP     = flag.String("listenHTTP", ":8080", "listen of the http service")
 //	listenInternal = flag.String("listenInternal", ":8081", "listen of the internal http service")
 //	network        = flag.String("network", "tcp", "network ")
 //	logLevel       = flag.String("log-level", "debug", "log level")
-//)
+// )
 
 type Server struct {
 	o                 *options
@@ -82,11 +82,11 @@ func WithGrpc(info *GrpcInfo) Option {
 	}
 }
 
-//func WithFlagSet(flagSet *pflag.FlagSet) Option {
+// func WithFlagSet(flagSet *pflag.FlagSet) Option {
 //	return func(o *options) {
 //		o.flagSet = append(o.flagSet, flagSet)
 //	}
-//}
+// }
 
 func NewServer(name string, infos ...*GrpcInfo) (*Server, *pflag.FlagSet, error) {
 	o := &options{
@@ -143,7 +143,11 @@ func (s *Server) runFunc(flagSet *pflag.FlagSet) func(cmd *cobra.Command, args [
 	log := logger.Log()
 	return func(cmd *cobra.Command, args []string) {
 		if err := flagSet.Parse(args); err != nil {
-			cmd.Usage()
+			err2 := cmd.Usage()
+			if err2 != nil {
+				log.Error(err2.Error())
+			}
+
 			log.Fatal(err.Error())
 		}
 
@@ -153,7 +157,10 @@ func (s *Server) runFunc(flagSet *pflag.FlagSet) func(cmd *cobra.Command, args [
 		cmds := flagSet.Args()
 
 		if len(cmds) > 0 {
-			cmd.Usage()
+			err2 := cmd.Usage()
+			if err2 != nil {
+				log.Error(err2.Error())
+			}
 			log.Fatalf("unknown command: %s", cmds[0])
 		}
 		log.Infof("flags: %v", flagSet)
@@ -164,7 +171,10 @@ func (s *Server) runFunc(flagSet *pflag.FlagSet) func(cmd *cobra.Command, args [
 		//	logger.Fatalf(`"help" flag is non-bool, programmer error, please correct. error: %v`, err.Error())
 		// }
 		if help {
-			cmd.Help()
+			err2 := cmd.Help()
+			if err2 != nil {
+				log.Error(err2.Error())
+			}
 			return
 		}
 		s.run()
@@ -219,7 +229,7 @@ func (s *Server) run() {
 
 func (s *Server) InitLoggerAndTracing(serviceName string) {
 	// setting logger
-	log := logger.ContextLog(nil)
+	log := logger.Log()
 	level, err2 := logger.ParseLevel(s.o.logLevel)
 	if err2 != nil {
 		log.Fatalf("failed to setting level: %v", err2.Error())
@@ -230,7 +240,7 @@ func (s *Server) InitLoggerAndTracing(serviceName string) {
 		log.Fatalf("failed to setting level: %v", err2.Error())
 	}
 	// reset after settings log level
-	log = logger.ContextLog(nil)
+	log = logger.Log()
 	// setting logger to grpc
 	grpclog.SetLoggerV2(log)
 	err2 = os.Setenv("JAEGER_SERVICE_NAME", serviceName)

@@ -2,13 +2,11 @@ package main
 
 import "fmt"
 
+// A demo struct
 type A struct {
 	kv map[string]string
 }
 
-type B struct {
-	a *A
-}
 
 func main() {
 	a := &A{}

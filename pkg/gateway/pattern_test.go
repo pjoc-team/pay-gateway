@@ -22,6 +22,11 @@ func BenchmarkReplaceGatewayOrderId(b *testing.B) {
 func BenchmarkReplacePlaceholder(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		gatewayOrderId := util.RandString(64)
-		ReplacePlaceholder("http://127.0.0.1:8888/notify/{gateway_order_id}", "gateway_order_id", gatewayOrderId)
+		_, err := ReplacePlaceholder("http://127.0.0.1:8888/notify/{gateway_order_id}",
+			"gateway_order_id",
+			gatewayOrderId)
+		if err != nil{
+			b.Fatal(err.Error())
+		}
 	}
 }

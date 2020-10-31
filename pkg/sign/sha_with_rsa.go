@@ -13,17 +13,21 @@ import (
 
 func SignPKCS8(src []byte, privateKey string, hash crypto.Hash) ([]byte, error) {
 	var h = hash.New()
-	h.Write(src)
+	var err error
+	_, err = h.Write(src)
+	if err != nil {
+		return nil, err
+	}
+
 	var hashed = h.Sum(nil)
 
-	var err error
 	bytes, _ := base64.StdEncoding.DecodeString(privateKey)
 	pri, err := x509.ParsePKCS8PrivateKey(bytes)
 	if err != nil {
 		logger.Log().Errorf("Parse private key with error: %v", err.Error())
 		return nil, err
 	}
-	//rsa.Sign
+	// rsa.Sign
 	return rsa.SignPKCS1v15(rand.Reader, pri.(*rsa.PrivateKey), hash, hashed)
 }
 

@@ -48,7 +48,3 @@ func (c configURL) Flag() string {
 func (c configURL) Required() bool {
 	return c.required
 }
-
-func newConfigURL(url string, required bool, flag string) *configURL {
-	return &configURL{url: url, required: required, flag: flag}
-}

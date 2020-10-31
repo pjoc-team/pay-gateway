@@ -13,8 +13,14 @@ func TestCopy(t *testing.T) {
 	orderRequest.BasePayOrder = &pay.BasePayOrder{}
 	orderRequest.BasePayOrder.GatewayOrderId = "123"
 	order := &PayOrder{}
-	copier.Copy(order, orderRequest)
-	copier.Copy(order, orderRequest)
+	err := copier.Copy(order, orderRequest)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = copier.Copy(order, orderRequest)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	fmt.Println(order.GatewayOrderId)
 	assert.Equal(t, orderRequest.BasePayOrder.GatewayOrderId, order.GatewayOrderId)
 }

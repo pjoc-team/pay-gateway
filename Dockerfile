@@ -1,22 +1,49 @@
 FROM golang:latest as build
 
-ARG repository
-ENV BUILD_PROJECT_PATH=${GOPATH}/src/${repository}
+ARG REPOSITORY
+ARG GOPROXY
+ENV BUILD_PROJECT_PATH=${GOPATH}/src/${REPOSITORY}
 ENV GO111MODULE=on
+ENV GOPROXY=${GOPROXY}
+ENV BIN=/app/bin
 
-RUN if [ -z "$repository" ]; then echo "repository arg is null!"; exit 1; else echo "path===${GOPATH}/src/$repository"; fi
+ADD . /tmp
+RUN export REPOSITORY=`cat /tmp/go.mod | grep -E "^module\s[0-9a-zA-Z\./_\-]+" | awk '{print $2}'`; \
+    export NAME=`basename $REPOSITORY`; \
+    export APP=`basename $REPOSITORY`; \
+    export BUILD_PROJECT_PATH="${GOPATH}/src/${REPOSITORY}"; \
+    env; \
+    if [ -z "$REPOSITORY" ]; then \
+        echo "repository arg is null!"; \
+        exit 1; \
+    else \
+        echo "path===${GOPATH}/src/$REPOSITORY"; \
+    fi; \
+    mkdir -p "${BUILD_PROJECT_PATH}"; \
+    cp -R /tmp/* ${BUILD_PROJECT_PATH}; \
+    cd ${BUILD_PROJECT_PATH}; \
+    pwd; \
+    if [ -f "go_build.sh" ]; then \
+        bash go_build.sh; \
+        ls /app/bin; \
+        mv /app/bin/* /app/; \
+        mv /app/${APP} /app/main; \
+    else \
+        echo "not found go_build.sh. files: `ls`" ;\
+    fi
 
-ADD . ${GOPATH}/src/${repository}
+RUN env
 
-RUN mkdir -p /app && cd ${BUILD_PROJECT_PATH} && CGO_ENABLED=0 GOOS=linux go build -o /app/main .
 
 FROM alpine:latest as certs
-#RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk --update add ca-certificates && \
-        mkdir -p /app
+    apk add bash && \
+    mkdir -p /app
 
-COPY --from=build /app/main /app/main
+#ENV APP=$app
+
+COPY --from=build /app/ /app/
 
 WORKDIR /app
-CMD ["/app/main"]
+CMD ["bash", "-c", "/app/main"]
 EXPOSE 8080
