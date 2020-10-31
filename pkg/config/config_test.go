@@ -37,8 +37,9 @@ func TestDefaultServer_GetConfig(t *testing.T) {
 		},
 	)
 	p := &person{}
-	backend.EXPECT().UnmarshalGetConfig(p, "appID1", "mchID1").Do(
-		func(p interface{}, keys ...string) {
+	backend.EXPECT().Start().MinTimes(1)
+	backend.EXPECT().UnmarshalGetConfig(context.Background(), p, "appID1", "mchID1").Do(
+		func(ctx context.Context, p interface{}, keys ...string) {
 			if len(keys) != 2 {
 				return
 			}
