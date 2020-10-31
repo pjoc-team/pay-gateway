@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/blademainer/commons/pkg/sign"
 	"github.com/blademainer/commons/pkg/util"
+	"github.com/pjoc-team/tracing/logger"
 	"hash/fnv"
 	"os"
 	"strconv"
@@ -68,7 +69,8 @@ func getIdentityID() uint32 {
 	if len(macs) == 0 {
 		rsaGenerator, err := sign.NewRsa2048Generator()
 		if err != nil {
-			mac = util.RandString(64)
+			logger.Log().Errorf("failed to gen id: %v", err.Error())
+			panic(err.Error())
 		}
 		mac, err = rsaGenerator.GeneratePemPublicKey()
 		if err != nil {
