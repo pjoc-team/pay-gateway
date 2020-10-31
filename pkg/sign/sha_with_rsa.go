@@ -11,7 +11,8 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 )
 
-func SignPKCS8(src []byte, privateKey string, hash crypto.Hash) ([]byte, error) {
+// PKCS8 sign by pkcs8 key
+func PKCS8(src []byte, privateKey string, hash crypto.Hash) ([]byte, error) {
 	var h = hash.New()
 	var err error
 	_, err = h.Write(src)
@@ -31,17 +32,20 @@ func SignPKCS8(src []byte, privateKey string, hash crypto.Hash) ([]byte, error) 
 	return rsa.SignPKCS1v15(rand.Reader, pri.(*rsa.PrivateKey), hash, hashed)
 }
 
-func SignPKCS1v15WithStringKey(src []byte, privateKeyString string, hash crypto.Hash) ([]byte, error) {
+// PKCS1v15WithStringKey sign by pkcs1v15 key
+func PKCS1v15WithStringKey(src []byte, privateKeyString string, hash crypto.Hash) ([]byte, error) {
 	privateKey := ParsePrivateKey(privateKeyString)
-	return SignPKCS1v15(src, privateKey, hash)
+	return PKCS1v15(src, privateKey, hash)
 }
 
+// VerifyPKCS1v15WithStringKey verify by pkcs1v15 key
 func VerifyPKCS1v15WithStringKey(src, sig []byte, publicKeyString string, hash crypto.Hash) error {
 	publicKey := ParsePublicKey(publicKeyString)
 	return VerifyPKCS1v15(src, sig, publicKey, hash)
 }
 
-func SignPKCS1v15(src, privateKey []byte, hash crypto.Hash) ([]byte, error) {
+// PKCS1v15 sign by pkcs1v15 key
+func PKCS1v15(src, privateKey []byte, hash crypto.Hash) ([]byte, error) {
 	var h = hash.New()
 	if _, err2 := h.Write(src); err2 != nil {
 		return nil, err2
@@ -64,6 +68,7 @@ func SignPKCS1v15(src, privateKey []byte, hash crypto.Hash) ([]byte, error) {
 	return rsa.SignPKCS1v15(rand.Reader, pri, hash, hashed)
 }
 
+// VerifyPKCS1v15 verify by pkcs1v15 key
 func VerifyPKCS1v15(src, sig, publicKey []byte, hash crypto.Hash) error {
 	var h = hash.New()
 	if _, err2 := h.Write(src); err2 != nil {

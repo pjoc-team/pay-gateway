@@ -19,6 +19,7 @@ type defaultServer struct {
 	backend types.Backend
 }
 
+// InitConfigServer init config server by url string
 func InitConfigServer(urlStr string) (Server, error) {
 	s := &defaultServer{}
 

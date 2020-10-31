@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-var clusterId = "06"
+var clusterID = "06"
 
 func TestDate(t *testing.T) {
 	fmt.Println(math.MaxInt64)
@@ -21,17 +21,17 @@ func TestDate(t *testing.T) {
 	fmt.Println(reflect.TypeOf(n))
 }
 
-func TestGenerateOrderId(t *testing.T) {
-	generator := New(clusterId, 1000)
+func TestGenerateOrderID(t *testing.T) {
+	generator := New(clusterID, 1000)
 	generator.Debug()
-	id := generator.GenerateId()
+	id := generator.GenerateID()
 	fmt.Println(id)
 }
 
-var generator = New(clusterId, 1000)
+var generator = New(clusterID, 1000)
 
-func BenchmarkGenerateOrderId(b *testing.B) {
+func BenchmarkGenerateOrderID(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		generator.GenerateId()
+		generator.GenerateID()
 	}
 }

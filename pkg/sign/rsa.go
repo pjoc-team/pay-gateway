@@ -54,6 +54,7 @@ func packageData(originalData []byte, packageSize int) (r [][]byte) {
 	return r
 }
 
+// RSAEncrypt encrypt by ras
 func RSAEncrypt(plaintext, key []byte) ([]byte, error) {
 	var err error
 	var block *pem.Block
@@ -83,6 +84,7 @@ func RSAEncrypt(plaintext, key []byte) ([]byte, error) {
 	return cipherData, nil
 }
 
+// RSADecrypt decrypt by rsa
 func RSADecrypt(ciphertext, key []byte) ([]byte, error) {
 	var err error
 	var block *pem.Block

@@ -11,16 +11,18 @@ import (
 	"golang.org/x/net/context"
 )
 
+// PayGatewayService pay gateway service
 type PayGatewayService struct {
 	dbServiceClient pb.PayDatabaseServiceClient
 	discovery       *service.Discovery
-	configclients   configclient.ConfigClients
+	configClients   configclient.ConfigClients
 	payConfig       *configclient.PayConfig
 	orderGenerator  *generator.Generator
 }
 
+// RequestContext context of request
 type RequestContext struct {
-	GatewayOrderId     string
+	GatewayOrderID     string
 	ChannelAccount     string
 	PayRequest         *pb.PayRequest
 	PayOrder           *pb.PayOrder
@@ -29,38 +31,42 @@ type RequestContext struct {
 	err                error
 }
 
+// BuildParamsErrorResponse build params error
 func BuildParamsErrorResponse(err error) *pb.PayResponse {
 	response := &pb.PayResponse{}
 	response.Result = &pb.ReturnResult{Code: pb.ReturnResultCode_CODE_PARAMS_ERROR, Message: "PARAMS_ERROR", Describe: err.Error()}
 	return response
 }
+
+// BuildSystemErrorResponse builder system error
 func BuildSystemErrorResponse(err error) *pb.PayResponse {
 	response := &pb.PayResponse{}
 	response.Result = &pb.ReturnResult{Code: pb.ReturnResultCode_CODE_SYSTEM_ERROR, Message: "SYSTEM_ERROR", Describe: err.Error()}
 	return response
 }
 
+// Pay process pay request
 func (svc *PayGatewayService) Pay(ctx context.Context, request *pb.PayRequest) (response *pb.PayResponse, err error) {
 	log := logger.ContextLog(ctx)
 	log.Debugf("New request: %v", request)
 	if err = request.Validate(); err != nil {
 		return BuildParamsErrorResponse(err), nil
 	}
-	if err = validator.Validate(ctx, *request, svc.configclients.GetAppConfig); err != nil {
+	if err = validator.Validate(ctx, *request, svc.configClients.GetAppConfig); err != nil {
 		return BuildParamsErrorResponse(err), nil
 	}
 	var cfg *configclient.AppIDChannelConfig
-	if cfg, err = svc.processChannelIdIfNotPresent(ctx, request); err != nil {
+	if cfg, err = svc.processChannelIDIfNotPresent(ctx, request); err != nil {
 		log.Error(err.Error())
-		err = fmt.Errorf("could'nt found config of channelId: %v", request.ChannelId)
+		err = fmt.Errorf("could'nt found config of channelID: %v", request.ChannelId)
 		return BuildParamsErrorResponse(err), nil
 	}
 
 	response = &pb.PayResponse{}
 	requestContext := &RequestContext{}
 
-	gatewayOrderId := svc.orderGenerator.GenerateId()
-	requestContext.GatewayOrderId = gatewayOrderId
+	gatewayOrderID := svc.orderGenerator.GenerateID()
+	requestContext.GatewayOrderID = gatewayOrderID
 	requestContext.PayRequest = request
 	requestContext.ChannelAccount = cfg.ChannelAccount
 
@@ -73,11 +79,10 @@ func (svc *PayGatewayService) Pay(ctx context.Context, request *pb.PayRequest) (
 	var client pb.PayChannelClient
 	client, err = svc.discovery.GetChannelClient(request.GetChannelId())
 	if client == nil || err != nil {
-		log.Errorf("Failed to get channelClient! channelId: %s, error: %s, ", request.GetChannelId(), err.Error())
+		log.Errorf("Failed to get channelClient! channelID: %s, error: %s, ", request.GetChannelId(), err.Error())
 		return BuildSystemErrorResponse(err), nil
-	} else {
-		log.Debugf("Got client: %v for channelId: %s", client, request.GetChannelId())
 	}
+	log.Debugf("Got client: %v for channelID: %s", client, request.GetChannelId())
 	var channelPayRequest *pb.ChannelPayRequest
 	if channelPayRequest, err = svc.GenerateChannelPayRequest(ctx, requestContext); err != nil {
 		return BuildSystemErrorResponse(err), nil
@@ -104,19 +109,19 @@ func (svc *PayGatewayService) Pay(ctx context.Context, request *pb.PayRequest) (
 	}
 
 	response.Data = channelPayResponse.Data
-	response.GatewayOrderId = gatewayOrderId
-	response.Result = SUCCESS_RESULT
+	response.GatewayOrderId = gatewayOrderID
+	response.Result = SuccessResult
 
 	return response, nil
 }
 
-// 如果没有传入channelId，则根据method找可用的channelId
-func (svc *PayGatewayService) processChannelIdIfNotPresent(ctx context.Context, request *pb.PayRequest) (channelConfig *configclient.AppIDChannelConfig, err error) {
+// 如果没有传入channelID，则根据method找可用的channelID
+func (svc *PayGatewayService) processChannelIDIfNotPresent(ctx context.Context, request *pb.PayRequest) (channelConfig *configclient.AppIDChannelConfig, err error) {
 	log := logger.ContextLog(ctx)
 
-	channelConfigs, err := svc.configclients.GetAppChannelConfig(ctx, request.AppId, request.Method.String())
+	channelConfigs, err := svc.configClients.GetAppChannelConfig(ctx, request.AppId, request.Method.String())
 	if err != nil {
-		err = fmt.Errorf("failed to found info of appId: %v", request.AppId)
+		err = fmt.Errorf("failed to found info of appID: %v", request.AppId)
 		return
 	} else if len(channelConfigs) == 0 {
 		err = fmt.Errorf("failed to get config of appID: %v method: %v", request.AppId, request.Method.String())
@@ -136,9 +141,10 @@ func (svc *PayGatewayService) processChannelIdIfNotPresent(ctx context.Context, 
 	return
 }
 
+// NewPayGateway new gateway service
 func NewPayGateway(cc configclient.ConfigClients, clusterID string, concurrency int, dbServiceClient pb.PayDatabaseServiceClient) (pb.PayGatewayServer, error) {
 	payGatewayService := &PayGatewayService{}
-	payGatewayService.configclients = cc
+	payGatewayService.configClients = cc
 	payGatewayService.orderGenerator = generator.New(clusterID, concurrency)
 	payGatewayService.dbServiceClient = dbServiceClient
 	return payGatewayService, nil

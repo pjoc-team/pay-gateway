@@ -11,7 +11,7 @@ type options struct {
 	ChannelServiceConfigServerURL *configURL
 	MerchantConfigServerURL       *configURL
 	PersonalMerchantServerURL     *configURL
-	AppIdChannelConfigServerURL   *configURL
+	AppIDChannelConfigServerURL   *configURL
 }
 
 func newOpts() (*options, error) {
@@ -57,11 +57,11 @@ func newOpts() (*options, error) {
 	}
 	o.ps.StringVar(&o.PersonalMerchantServerURL.url, o.PersonalMerchantServerURL.Flag(), "file://./conf/biz/personal-merchant.yaml", "config uri. see: config.Server")
 
-	o.AppIdChannelConfigServerURL = &configURL{
+	o.AppIDChannelConfigServerURL = &configURL{
 		required: false,
 		flag:     "app-id-channel-config-url",
 	}
-	o.ps.StringVar(&o.AppIdChannelConfigServerURL.url, o.AppIdChannelConfigServerURL.Flag(), "file://./conf/biz/app-id-channel-config.yaml", "config uri. see: config.Server")
+	o.ps.StringVar(&o.AppIDChannelConfigServerURL.url, o.AppIDChannelConfigServerURL.Flag(), "file://./conf/biz/app-id-channel-config.yaml", "config uri. see: config.Server")
 
 	return o, nil
 }
@@ -118,9 +118,9 @@ func WithPersonalMerchantServer(required bool) Option {
 
 }
 
-// WithAppIdChannelConfigServer 设置AppIdChannelConfigServer
-func WithAppIdChannelConfigServer(required bool) Option {
+// WithAppIDChannelConfigServer 设置AppIDChannelConfigServer
+func WithAppIDChannelConfigServer(required bool) Option {
 	return func(o *options) {
-		o.AppIdChannelConfigServerURL.required = required
+		o.AppIDChannelConfigServerURL.required = required
 	}
 }

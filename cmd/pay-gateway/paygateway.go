@@ -42,7 +42,7 @@ func main() {
 
 	configClients, configFlagSet, err := configclient.NewConfigClients(
 		configclient.WithMerchantConfigServer(true),
-		configclient.WithAppIdChannelConfigServer(true),
+		configclient.WithAppIDChannelConfigServer(true),
 	)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -60,7 +60,7 @@ func main() {
 	}
 
 	payGateway, err := service.NewPayGateway(configClients, c.clusterID, c.concurrency)
-	if err != nil{
+	if err != nil {
 		log.Fatal(err.Error())
 	}
 	grpcInfo := &service.GrpcInfo{

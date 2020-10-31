@@ -3,14 +3,18 @@ package date
 import "time"
 
 const (
-	TIME_FORMAT = "2006-01-02 15:04:05"
-	DATE_FORMAT = "2006-01-02"
+	// TimeFormat 时间格式
+	TimeFormat = "2006-01-02T15:04:05.999Z07:00"
+	// DateFormat 日期格式
+	DateFormat = "2006-01-02"
 )
 
+// NowDate Now date string
 func NowDate() string {
-	return time.Now().Format(DATE_FORMAT)
+	return time.Now().Format(DateFormat)
 }
 
+// NowTime Now time string
 func NowTime() string {
-	return time.Now().Format(TIME_FORMAT)
+	return time.Now().Format(TimeFormat)
 }

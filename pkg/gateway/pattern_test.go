@@ -6,25 +6,25 @@ import (
 	"testing"
 )
 
-func TestReplaceGatewayOrderId(t *testing.T) {
-	gatewayOrderId := util.RandString(64)
-	id := ReplaceGatewayOrderId("http://127.0.0.1:8888/notify/{gateway_order_id}", gatewayOrderId)
-	assert.Equal(t, "http://127.0.0.1:8888/notify/"+gatewayOrderId, id)
+func TestReplaceGatewayOrderID(t *testing.T) {
+	gatewayOrderID := util.RandString(64)
+	id := ReplaceGatewayOrderID("http://127.0.0.1:8888/notify/{gateway_order_id}", gatewayOrderID)
+	assert.Equal(t, "http://127.0.0.1:8888/notify/"+gatewayOrderID, id)
 }
 
-func BenchmarkReplaceGatewayOrderId(b *testing.B) {
+func BenchmarkReplaceGatewayOrderID(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		gatewayOrderId := util.RandString(64)
-		ReplaceGatewayOrderId("http://127.0.0.1:8888/notify/{gateway_order_id}", gatewayOrderId)
+		gatewayOrderID := util.RandString(64)
+		ReplaceGatewayOrderID("http://127.0.0.1:8888/notify/{gateway_order_id}", gatewayOrderID)
 	}
 }
 
 func BenchmarkReplacePlaceholder(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		gatewayOrderId := util.RandString(64)
+		gatewayOrderID := util.RandString(64)
 		_, err := ReplacePlaceholder("http://127.0.0.1:8888/notify/{gateway_order_id}",
 			"gateway_order_id",
-			gatewayOrderId)
+			gatewayOrderID)
 		if err != nil{
 			b.Fatal(err.Error())
 		}

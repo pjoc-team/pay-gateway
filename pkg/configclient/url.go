@@ -19,8 +19,8 @@ type (
 	// PersonalMerchantServerURL PersonalMerchantServerURL
 	PersonalMerchantServerURL string
 
-	// AppIdChannelConfigServerURL AppIdChannelConfigServerURL
-	AppIdChannelConfigServerURL string
+	// AppIDChannelConfigServerURL AppIDChannelConfigServerURL
+	AppIDChannelConfigServerURL string
 )
 
 // ConfigURL 配置URL

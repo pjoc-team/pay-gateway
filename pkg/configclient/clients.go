@@ -11,10 +11,10 @@ import (
 // ConfigClients 所有配置
 type ConfigClients interface {
 	// GetAppChannelConfig 获取渠道配置
-	GetAppChannelConfig(ctx context.Context, appId string, method string) ([]*AppIDChannelConfig, error)
+	GetAppChannelConfig(ctx context.Context, appID string, method string) ([]*AppIDChannelConfig, error)
 
 	// GetAppConfig 获取应用配置
-	GetAppConfig(ctx context.Context, appId string) (*MerchantConfig, error)
+	GetAppConfig(ctx context.Context, appID string) (*MerchantConfig, error)
 }
 
 // configClients 所有配置
@@ -25,7 +25,7 @@ type configClients struct {
 	ChannelServiceConfigServer *configClient
 	MerchantConfigServer       *configClient
 	PersonalMerchantServer     *configClient
-	AppIdChannelConfigServer   *configClient
+	AppIDChannelConfigServer   *configClient
 	FlagSet                    *pflag.FlagSet
 }
 
@@ -129,33 +129,33 @@ func (c *configClients) initConfigs(o *options) error {
 	}
 	c.PersonalMerchantServer = client
 
-	client, err = newConfigClient(o.AppIdChannelConfigServerURL)
+	client, err = newConfigClient(o.AppIDChannelConfigServerURL)
 	if err != nil {
 		return err
 	}
-	c.AppIdChannelConfigServer = client
+	c.AppIDChannelConfigServer = client
 
 	c.FlagSet = o.ps
 	return nil
 }
 
-func (c *configClients) GetAppChannelConfig(ctx context.Context, appId string, method string) ([]*AppIDChannelConfig, error) {
+func (c *configClients) GetAppChannelConfig(ctx context.Context, appID string, method string) ([]*AppIDChannelConfig, error) {
 	log := logger.ContextLog(ctx)
 	appConfig := make([]*AppIDChannelConfig, 0)
-	err := c.AppIdChannelConfigServer.UnmarshalGetConfig(ctx, &appConfig, appId, method)
+	err := c.AppIDChannelConfigServer.UnmarshalGetConfig(ctx, &appConfig, appID, method)
 	if err != nil {
-		log.Errorf("failed to get channel config of appID: %v method: %v error: %v", appId, method, err.Error())
+		log.Errorf("failed to get channel config of appID: %v method: %v error: %v", appID, method, err.Error())
 		return nil, err
 	}
 	return appConfig, nil
 }
 
-func (c *configClients) GetAppConfig(ctx context.Context, appId string) (*MerchantConfig, error) {
+func (c *configClients) GetAppConfig(ctx context.Context, appID string) (*MerchantConfig, error) {
 	log := logger.ContextLog(ctx)
 	merchantConfig := &MerchantConfig{}
-	err := c.AppIdChannelConfigServer.UnmarshalGetConfig(ctx, merchantConfig, appId)
+	err := c.AppIDChannelConfigServer.UnmarshalGetConfig(ctx, merchantConfig, appID)
 	if err != nil {
-		log.Errorf("failed to get merchant config of appID: %v method: %v error: %v", appId, err.Error())
+		log.Errorf("failed to get merchant config of appID: %v method: %v error: %v", appID, err.Error())
 		return nil, err
 	}
 	return merchantConfig, nil

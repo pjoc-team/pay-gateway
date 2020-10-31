@@ -10,10 +10,12 @@ import (
 	"golang.org/x/net/context"
 )
 
+// PayDatabaseService service of db
 type PayDatabaseService struct {
 	*gorm.DB
 }
 
+// FindPayNoticeLessThenTime find notices less then time
 func (s *PayDatabaseService) FindPayNoticeLessThenTime(ctx context.Context, payNotice *pb.PayNotice) (response *pb.PayNoticeResponse, err error) {
 	log := logger.ContextLog(ctx)
 	notice := &model.Notice{}
@@ -22,7 +24,7 @@ func (s *PayDatabaseService) FindPayNoticeLessThenTime(ctx context.Context, payN
 		return
 	}
 	results := make([]model.Notice, 0)
-	if results := s.Where("length(next_notify_time) > 0 and next_notify_time <= ? and status != ?", notice.NextNotifyTime, constant.NOTIFY_SUCCESS).Find(&results); results.RecordNotFound() {
+	if results := s.Where("length(next_notify_time) > 0 and next_notify_time <= ? and status != ?", notice.NextNotifyTime, constant.NotifySuccess).Find(&results); results.RecordNotFound() {
 		log.Errorf("find error: %v", s.Error.Error())
 		return
 	}
@@ -40,6 +42,7 @@ func (s *PayDatabaseService) FindPayNoticeLessThenTime(ctx context.Context, payN
 	return
 }
 
+// SavePayNotice save pay notice data
 func (s *PayDatabaseService) SavePayNotice(ctx context.Context, payNotice *pb.PayNotice) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	notice := &model.Notice{}
@@ -57,6 +60,7 @@ func (s *PayDatabaseService) SavePayNotice(ctx context.Context, payNotice *pb.Pa
 	return
 }
 
+// UpdatePayNotice update notice by id
 func (s *PayDatabaseService) UpdatePayNotice(ctx context.Context, payNotice *pb.PayNotice) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	notice := &model.Notice{}
@@ -74,6 +78,7 @@ func (s *PayDatabaseService) UpdatePayNotice(ctx context.Context, payNotice *pb.
 	return
 }
 
+// FindPayNotice find notice
 func (s *PayDatabaseService) FindPayNotice(ctx context.Context, payNotice *pb.PayNotice) (response *pb.PayNoticeResponse, err error) {
 	log := logger.ContextLog(ctx)
 	notice := &model.Notice{}
@@ -101,6 +106,7 @@ func (s *PayDatabaseService) FindPayNotice(ctx context.Context, payNotice *pb.Pa
 	return
 }
 
+// SavePayNotifyOk save notice ok data
 func (s *PayDatabaseService) SavePayNotifyOk(ctx context.Context, payNoticeOkRequest *pb.PayNoticeOk) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	tx := s.Begin()
@@ -121,8 +127,8 @@ func (s *PayDatabaseService) SavePayNotifyOk(ctx context.Context, payNoticeOkReq
 		tx.Rollback()
 		return
 	}
-	notice := &model.Notice{GatewayOrderId: payNoticeOkRequest.GatewayOrderId}
-	notice.Status = constant.ORDER_STATUS_SUCCESS
+	notice := &model.Notice{GatewayOrderID: payNoticeOkRequest.GatewayOrderID}
+	notice.Status = constant.OrderStatusSuccess
 	if update := s.Model(notice).Update(notice); update.Error != nil {
 		log.Errorf("failed to update notice!")
 		tx.Rollback()
@@ -135,6 +141,7 @@ func (s *PayDatabaseService) SavePayNotifyOk(ctx context.Context, payNoticeOkReq
 	return
 }
 
+// FindPayNotifyOk find notify ok data
 func (s *PayDatabaseService) FindPayNotifyOk(ctx context.Context, payNoticeOk *pb.PayNoticeOk) (response *pb.PayNoticeOkResponse, err error) {
 	log := logger.ContextLog(ctx)
 	noticeOk := &model.NoticeOk{}
@@ -168,6 +175,7 @@ func (s *PayDatabaseService) FindPayNotifyOk(ctx context.Context, payNoticeOk *p
 	return
 }
 
+// UpdatePayNoticeOk update pay notice ok data
 func (s *PayDatabaseService) UpdatePayNoticeOk(ctx context.Context, payNoticeOk *pb.PayNoticeOk) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	noticeOk := &model.NoticeOk{}
@@ -185,6 +193,7 @@ func (s *PayDatabaseService) UpdatePayNoticeOk(ctx context.Context, payNoticeOk 
 	return
 }
 
+// FindPayOrder find pay order
 func (s *PayDatabaseService) FindPayOrder(ctx context.Context, orderRequest *pb.PayOrder) (response *pb.PayOrderResponse, err error) {
 	log := logger.ContextLog(ctx)
 	order := &model.PayOrder{}
@@ -219,6 +228,8 @@ func (s *PayDatabaseService) FindPayOrder(ctx context.Context, orderRequest *pb.
 	return
 }
 
+
+// FindPayOrderOk find pay order ok data
 func (s *PayDatabaseService) FindPayOrderOk(ctx context.Context, orderOkRequest *pb.PayOrderOk) (response *pb.PayOrderOkResponse, err error) {
 	log := logger.ContextLog(ctx)
 	orderOk := &model.PayOrderOk{}
@@ -249,6 +260,7 @@ func (s *PayDatabaseService) FindPayOrderOk(ctx context.Context, orderOkRequest 
 	return
 }
 
+// SavePayOrder save pay order
 func (s *PayDatabaseService) SavePayOrder(ctx context.Context, orderRequest *pb.PayOrder) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	order := &model.PayOrder{}
@@ -266,6 +278,7 @@ func (s *PayDatabaseService) SavePayOrder(ctx context.Context, orderRequest *pb.
 	return
 }
 
+// UpdatePayOrder update pay order
 func (s *PayDatabaseService) UpdatePayOrder(ctx context.Context, orderRequest *pb.PayOrder) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	order := &model.PayOrder{}
@@ -283,6 +296,7 @@ func (s *PayDatabaseService) UpdatePayOrder(ctx context.Context, orderRequest *p
 	return
 }
 
+// SavePayOrderOk save pay order ok data
 func (s *PayDatabaseService) SavePayOrderOk(ctx context.Context, orderOkRequest *pb.PayOrderOk) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	tx := s.Begin()
@@ -303,8 +317,8 @@ func (s *PayDatabaseService) SavePayOrderOk(ctx context.Context, orderOkRequest 
 		tx.Rollback()
 		return
 	}
-	payOrder := &model.PayOrder{BasePayOrder: model.BasePayOrder{GatewayOrderId: orderOkRequest.BasePayOrder.GatewayOrderId}}
-	payOrder.OrderStatus = constant.ORDER_STATUS_SUCCESS
+	payOrder := &model.PayOrder{BasePayOrder: model.BasePayOrder{GatewayOrderID: orderOkRequest.BasePayOrder.GatewayOrderID}}
+	payOrder.OrderStatus = constant.OrderStatusSuccess
 	if update := s.Model(payOrder).Update(payOrder); update.Error != nil {
 		log.Errorf("failed to update order!")
 		tx.Rollback()
@@ -317,6 +331,7 @@ func (s *PayDatabaseService) SavePayOrderOk(ctx context.Context, orderOkRequest 
 	return
 }
 
+// UpdatePayOrderOk update pay order ok data
 func (s *PayDatabaseService) UpdatePayOrderOk(ctx context.Context, orderOkRequest *pb.PayOrderOk) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	order := &model.PayOrderOk{}
@@ -334,6 +349,7 @@ func (s *PayDatabaseService) UpdatePayOrderOk(ctx context.Context, orderOkReques
 	return
 }
 
+// NewServer new database service
 func NewServer() (pb.PayDatabaseServiceServer, error) {
 	svc := &PayDatabaseService{}
 	return svc, nil

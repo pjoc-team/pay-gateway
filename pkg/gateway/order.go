@@ -11,8 +11,9 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 )
 
+// SavePayOrder save pay order
 func (svc *PayGatewayService) SavePayOrder(ctx context.Context, requestContext *RequestContext) (*pb.ReturnResult, error) {
-	gatewayOrderId := requestContext.GatewayOrderId
+	gatewayOrderID := requestContext.GatewayOrderID
 	request := requestContext.PayRequest
 
 	order := &pb.PayOrder{}
@@ -24,24 +25,25 @@ func (svc *PayGatewayService) SavePayOrder(ctx context.Context, requestContext *
 		return nil, err
 	}
 
-	order.OrderStatus = constant.ORDER_STATUS_WAITING
-	basePayOrder.GatewayOrderId = gatewayOrderId
+	order.OrderStatus = constant.OrderStatusWaiting
+	basePayOrder.GatewayOrderId = gatewayOrderID
 	basePayOrder.RequestTime = date.NowTime()
 	basePayOrder.CreateDate = date.NowDate()
 	basePayOrder.ChannelAccount = requestContext.ChannelAccount
 
-	if result, err := svc.dbServiceClient.SavePayOrder(ctx, order); err != nil {
-		logger.ContextLog(ctx).Errorf("Failed to save order: %v returns error: %s", order, err.Error())
+	result, err := svc.dbServiceClient.SavePayOrder(ctx, order)
+	if err != nil {
+		logger.ContextLog(ctx).Errorf("failed to save order: %v returns error: %s", order, err.Error())
 		return nil, err
-	} else {
-		logger.ContextLog(ctx).Infof("Save db result: %v", result)
-		return result, nil
 	}
+	logger.ContextLog(ctx).Infof("save db result: %v", result)
+	return result, nil
 }
 
+// UpdatePayOrder update pay order
 func (svc *PayGatewayService) UpdatePayOrder(ctx context.Context, requestContext *RequestContext) (result *pb.ReturnResult, err error) {
 	if requestContext.ChannelPayResponse == nil {
-		logger.ContextLog(ctx).Errorf("Failed to update pay order! because channel response is null!")
+		logger.ContextLog(ctx).Errorf("failed to update pay order! because channel response is null!")
 		err = errors.New("failed update pay order")
 		return
 	}
@@ -51,22 +53,22 @@ func (svc *PayGatewayService) UpdatePayOrder(ctx context.Context, requestContext
 	}
 
 	if strings := requestContext.ChannelPayResponse.Data; strings != nil {
-		if channelResponseJson, err := json.Marshal(strings); err != nil {
+		if channelResponseJSON, err := json.Marshal(strings); err != nil {
 			logger.ContextLog(ctx).Errorf("Failed to marshal object: %v to json! error: %v", strings, err.Error())
 		} else {
-			order.BasePayOrder.ChannelResponseJson = string(channelResponseJson)
+			order.BasePayOrder.ChannelResponseJson = string(channelResponseJSON)
 		}
 	}
 
 	svc.presentChannelErrorMessage(requestContext)
 
-	if result, err := svc.dbServiceClient.UpdatePayOrder(ctx, order); err != nil {
+	result, err = svc.dbServiceClient.UpdatePayOrder(ctx, order)
+	if err != nil {
 		logger.ContextLog(ctx).Errorf("Failed to save order: %v returns error: %s", order, err.Error())
 		return nil, err
-	} else {
-		logger.ContextLog(ctx).Infof("Save db result: %v", result)
-		return result, nil
 	}
+	logger.ContextLog(ctx).Infof("Save db result: %v", result)
+	return result, nil
 }
 
 func (svc *PayGatewayService) presentChannelErrorMessage(requestContext *RequestContext) {

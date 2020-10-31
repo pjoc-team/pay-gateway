@@ -2,10 +2,10 @@ package configclient
 
 // PayConfig 支付配置
 type PayConfig struct {
-	ClusterID        string `json:"cluster_id" yaml:"clusterId"`
+	ClusterID        string `json:"cluster_id" yaml:"clusterID"`
 	Concurrency      int    `json:"concurrency" yaml:"concurrency"`
-	NotifyUrlPattern string `json:"notify_url_pattern" yaml:"notifyUrlPattern"` // 通知地址的正则，必须包含{gateway_order_id}
-	ReturnUrlPattern string `json:"return_url_pattern" yaml:"returnUrlPattern"` // 跳转地址的正则，必须包含{gateway_order_id}
+	NotifyURLPattern string `json:"notify_url_pattern" yaml:"notifyURLPattern"` // 通知地址的正则，必须包含{gateway_order_id}
+	ReturnURLPattern string `json:"return_url_pattern" yaml:"returnURLPattern"` // 跳转地址的正则，必须包含{gateway_order_id}
 }
 
 // NoticeConfig 通知配置
@@ -27,7 +27,7 @@ type ServiceConfig struct {
 
 // ChannelServiceConfig 渠道微服务配置
 type ChannelServiceConfig struct {
-	ChannelID   string `json:"channel_id" yaml:"channelId"`
+	ChannelID   string `json:"channel_id" yaml:"channelID"`
 	ServiceName string `json:"service_name" yaml:"serviceName"`
 	Host        string `json:"host" yaml:"host"`
 	Port        int    `json:"port" yaml:"port"`
@@ -35,7 +35,7 @@ type ChannelServiceConfig struct {
 
 // MerchantConfig 商户配置
 type MerchantConfig struct {
-	AppID                string `json:"app_id" yaml:"appId"`
+	AppID                string `json:"app_id" yaml:"appID"`
 	GatewayRSAPublicKey  string `json:"gateway_rsa_public_key" yaml:"gatewayRsaPublicKey"`
 	GatewayRSAPrivateKey string `json:"gateway_rsa_private_key" yaml:"gatewayRsaPrivateKey"`
 	MerchantRSAPublicKey string `json:"merchant_rsa_public_key" yaml:"merchantRsaPublicKey"`
@@ -44,7 +44,7 @@ type MerchantConfig struct {
 
 // PersonalMerchant 个人码渠道
 type PersonalMerchant struct {
-	AppID                string `json:"app_id" yaml:"appId"`
+	AppID                string `json:"app_id" yaml:"appID"`
 	GatewayRSAPublicKey  string `json:"gateway_rsa_public_key" yaml:"gatewayRsaPublicKey"`
 	GatewayRSAPrivateKey string `json:"gateway_rsa_private_key" yaml:"gatewayRsaPrivateKey"`
 	MerchantRSAPublicKey string `json:"merchant_rsa_public_key" yaml:"merchantRsaPublicKey"`
@@ -57,5 +57,5 @@ type AppIDChannelConfig struct {
 	Method         string  `json:"method" yaml:"method"`
 	ChannelAccount string  `json:"channel_account" yaml:"channelAccount"`
 	Available      bool    `json:"available" yaml:"available"`
-	ChannelID      string  `json:"channel_id" yaml:"channelId"`
+	ChannelID      string  `json:"channel_id" yaml:"channelID"`
 }
