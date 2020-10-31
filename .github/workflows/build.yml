@@ -20,7 +20,7 @@ env:
 jobs:
   # Run build.
   # See also https://docs.docker.com/docker-hub/builds/automated-testing/
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
