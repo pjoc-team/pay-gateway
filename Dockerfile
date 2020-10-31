@@ -44,6 +44,7 @@ RUN apk --update add ca-certificates && \
 #ENV APP=$app
 
 COPY --from=build /app/ /app/
+ADD conf/ /app/conf/
 
 WORKDIR /app
 CMD ["bash", "-c", "/app/main"]

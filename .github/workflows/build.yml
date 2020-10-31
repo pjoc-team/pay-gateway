@@ -18,9 +18,9 @@ env:
   IMAGE_NAME: pay-gateway
 
 jobs:
-  # Run tests.
+  # Run build.
   # See also https://docs.docker.com/docker-hub/builds/automated-testing/
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -39,7 +39,7 @@ jobs:
 #          restore-keys: |
 #            ${{ runner.os }}-go-
 
-      - name: Run tests
+      - name: Run build
         run: |
           if [ -f docker-compose.test.yml ]; then
             docker-compose --file docker-compose.test.yml build
