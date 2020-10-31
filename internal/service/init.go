@@ -265,7 +265,7 @@ func (s *Server) InitLoggerAndTracing(serviceName string) {
 func (s *Server) initGrpc() {
 	g := s.g
 	ctx := s.ctx
-	log := logger.ContextLog(nil)
+	log := logger.Log()
 	for _, info := range s.o.infos {
 		// 注册所有grpc
 		RegisterGrpc(info.Name, info.RegisterGrpcFunc, info.RegisterGatewayFunc)

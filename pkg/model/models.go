@@ -32,9 +32,9 @@ func (b *BaseConfig) BaseDir() string {
 }
 
 type BaseConfig struct {
-	key      string `json:"-"`
-	baseDir  string `json:"-"`
-	dirName  string `json:"-"`
+	key      string
+	baseDir  string
+	dirName  string
 }
 
 // ################## service ##################

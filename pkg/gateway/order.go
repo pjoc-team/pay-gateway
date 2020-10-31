@@ -19,7 +19,10 @@ func (svc *PayGatewayService) SavePayOrder(ctx context.Context, requestContext *
 	requestContext.PayOrder = order
 	basePayOrder := &pb.BasePayOrder{}
 	order.BasePayOrder = basePayOrder
-	copier.Copy(basePayOrder, request)
+	err := copier.Copy(basePayOrder, request)
+	if err != nil {
+		return nil, err
+	}
 
 	order.OrderStatus = constant.ORDER_STATUS_WAITING
 	basePayOrder.GatewayOrderId = gatewayOrderId

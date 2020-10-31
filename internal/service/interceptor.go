@@ -37,11 +37,11 @@ func recoverInterceptor(h http.Handler) http.Handler {
 // tracingServerInterceptor 拦截grpc gateway生成tracing信息
 func tracingServerInterceptor(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := logger.ContextLog(nil)
+		log := logger.Log()
 		newCtx := r.Context()
 		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
 		if err != nil && err != opentracing.ErrSpanContextNotFound {
-			logger.Errorf("extract from header err: %v", err)
+			log.Errorf("extract from header err: %v", err)
 		} else {
 			span := opentracing.GlobalTracer().StartSpan(r.RequestURI, ext.RPCServerOption(spanCtx))
 			defer span.Finish()

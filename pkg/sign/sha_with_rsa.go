@@ -43,7 +43,10 @@ func VerifyPKCS1v15WithStringKey(src, sig []byte, publicKeyString string, hash c
 
 func SignPKCS1v15(src, privateKey []byte, hash crypto.Hash) ([]byte, error) {
 	var h = hash.New()
-	h.Write(src)
+	if _, err2 := h.Write(src); err2 != nil {
+		return nil, err2
+	}
+
 	var hashed = h.Sum(nil)
 
 	var err error
@@ -63,7 +66,9 @@ func SignPKCS1v15(src, privateKey []byte, hash crypto.Hash) ([]byte, error) {
 
 func VerifyPKCS1v15(src, sig, publicKey []byte, hash crypto.Hash) error {
 	var h = hash.New()
-	h.Write(src)
+	if _, err2 := h.Write(src); err2 != nil {
+		return err2
+	}
 	var hashed = h.Sum(nil)
 
 	var err error
