@@ -127,7 +127,7 @@ func (s *PayDatabaseService) SavePayNotifyOk(ctx context.Context, payNoticeOkReq
 		tx.Rollback()
 		return
 	}
-	notice := &model.Notice{GatewayOrderID: payNoticeOkRequest.GatewayOrderID}
+	notice := &model.Notice{GatewayOrderID: payNoticeOkRequest.GatewayOrderId}
 	notice.Status = constant.OrderStatusSuccess
 	if update := s.Model(notice).Update(notice); update.Error != nil {
 		log.Errorf("failed to update notice!")
@@ -317,7 +317,7 @@ func (s *PayDatabaseService) SavePayOrderOk(ctx context.Context, orderOkRequest 
 		tx.Rollback()
 		return
 	}
-	payOrder := &model.PayOrder{BasePayOrder: model.BasePayOrder{GatewayOrderID: orderOkRequest.BasePayOrder.GatewayOrderID}}
+	payOrder := &model.PayOrder{BasePayOrder: model.BasePayOrder{GatewayOrderID: orderOkRequest.BasePayOrder.GatewayOrderId}}
 	payOrder.OrderStatus = constant.OrderStatusSuccess
 	if update := s.Model(payOrder).Update(payOrder); update.Error != nil {
 		log.Errorf("failed to update order!")
