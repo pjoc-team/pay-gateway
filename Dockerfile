@@ -20,6 +20,7 @@ RUN export REPOSITORY=`cat /tmp/go.mod | grep -E "^module\s[0-9a-zA-Z\./_\-]+" |
         echo "path===${GOPATH}/src/$REPOSITORY"; \
     fi; \
     mkdir -p "${BUILD_PROJECT_PATH}"; \
+    mkdir -p "${BIN}"; \
     cp -R /tmp/* ${BUILD_PROJECT_PATH}; \
     cd ${BUILD_PROJECT_PATH}; \
     pwd; \
