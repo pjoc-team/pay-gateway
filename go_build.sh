@@ -1,6 +1,6 @@
 export GO111MODULE=on
 
-cmd_dir="./"
+cmd_dir="./cmd"
 #set -x
 bin_dir="./bin"
 if [ -n "${BIN}" ]; then
