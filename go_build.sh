@@ -1,13 +1,8 @@
-#!/usr/bin/env bash
-
 export GO111MODULE=on
 
-cur_script_dir="`cd $(dirname $0) && pwd`"
-WORK_HOME="${cur_script_dir}/.."
-
-cmd_dir="${WORK_HOME}"
+cmd_dir="./"
 #set -x
-bin_dir="${WORK_HOME}/bin"
+bin_dir="./bin"
 if [ -n "${BIN}" ]; then
     bin_dir="${BIN}"
 fi

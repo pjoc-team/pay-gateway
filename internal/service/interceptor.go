@@ -21,7 +21,7 @@ type interceptor func(http.Handler) http.Handler
 
 var httpInterceptors = []interceptor{recoverInterceptor, tracingServerInterceptor}
 
-//recoverInterceptor 感知panic错误
+// recoverInterceptor 感知panic错误
 func recoverInterceptor(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		recoverable.WithRecoveryHandlerContext(
@@ -34,7 +34,7 @@ func recoverInterceptor(h http.Handler) http.Handler {
 	})
 }
 
-//tracingServerInterceptor 拦截grpc gateway生成tracing信息
+// tracingServerInterceptor 拦截grpc gateway生成tracing信息
 func tracingServerInterceptor(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger := logger.ContextLog(nil)
@@ -46,11 +46,11 @@ func tracingServerInterceptor(h http.Handler) http.Handler {
 			span := opentracing.GlobalTracer().StartSpan(r.RequestURI, ext.RPCServerOption(spanCtx))
 			defer span.Finish()
 			newCtx = opentracing.ContextWithSpan(newCtx, span)
-			requestID := r.Header.Get(tracing.HttpHeaderKeyXRequestID)
+			requestID := r.Header.Get(string(tracing.HttpHeaderKeyXRequestID))
 			if requestID != "" {
-				span.SetTag(tracing.SpanTagKeyHttpRequestID, requestID)
+				span.SetTag(string(tracing.SpanTagKeyHttpRequestID), requestID)
 				newCtx = context.WithValue(newCtx, tracing.SpanTagKeyHttpRequestID, requestID)
-				w.Header().Add(tracing.HttpHeaderKeyXRequestID, requestID)
+				w.Header().Add(string(tracing.HttpHeaderKeyXRequestID), requestID)
 			}
 			w.Header().Add(TraceID, util.GetTraceID(newCtx))
 		}
@@ -58,7 +58,7 @@ func tracingServerInterceptor(h http.Handler) http.Handler {
 	})
 }
 
-//healthInterceptor 拦截health请求
+// healthInterceptor 拦截health请求
 func healthInterceptor(healthServer *health.Server) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		logger := logger.ContextLog(request.Context())
