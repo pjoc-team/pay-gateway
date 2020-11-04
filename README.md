@@ -2,7 +2,6 @@
 
 [![License](https://img.shields.io/github/license/pjoc-team/pay-gateway.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Stars](https://img.shields.io/github/stars/pjoc-team/pay-gateway.svg)](https://github.com/pjoc-team/pay-gateway/stargazers)
-
 [![Builder](https://github.com/pjoc-team/pay-gateway/workflows/Builder/badge.svg)](https://github.com/pjoc-team/pay-gateway/actions)
 [![GoDoc](https://img.shields.io/badge/doc-go.dev-informational.svg)](https://pkg.go.dev/github.com/pjoc-team/pay-gateway)
 [![GoMod](https://img.shields.io/github/go-mod/go-version/pjoc-team/pay-gateway.svg)](https://golang.org/)
