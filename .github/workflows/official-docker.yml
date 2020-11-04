@@ -48,9 +48,9 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: |
-            ${{ secrets.DOCKER_ORGANIZATION }}/${REPO_NAME}:${COMMIT_SHORT}
-            ${{ secrets.DOCKER_ORGANIZATION }}/${GITHUB_PATH}:latest
+#          tags: |
+#            ${{ secrets.DOCKER_ORGANIZATION }}/${REPO_NAME}:${COMMIT_SHORT}
+#            ${{ secrets.DOCKER_ORGANIZATION }}/${GITHUB_PATH}:latest
           build-args: |
           platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/ppc64le,linux/s390x
       - name: Image digest
