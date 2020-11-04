@@ -6,7 +6,7 @@
 [![GoDoc](https://img.shields.io/badge/doc-go.dev-informational.svg)](https://pkg.go.dev/github.com/pjoc-team/pay-gateway)
 [![GoMod](https://img.shields.io/github/go-mod/go-version/pjoc-team/pay-gateway.svg)](https://golang.org/)
 
-[![Docker](https://img.shields.io/docker/v/pjoc/pay-gateway.svg)](https://hub.docker.com/r/pjoc/pay-gateway/tags)
+[![Docker](https://img.shields.io/docker/v/pjoc/pay-gateway.svg?label=docker)](https://hub.docker.com/r/pjoc/pay-gateway/tags)
 [![Docker](https://img.shields.io/docker/image-size/pjoc/pay-gateway/latest.svg)](https://hub.docker.com/r/pjoc/pay-gateway/tags)
 [![Docker](https://img.shields.io/docker/pulls/pjoc/pay-gateway.svg)](https://hub.docker.com/r/pjoc/pay-gateway/tags)
 
