@@ -36,6 +36,12 @@ jobs:
 #          tag_with_sha: true
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
+      - name: Docker meta
+        id: docker_meta
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: ${{ secrets.DOCKER_ORGANIZATION }}/${REPO_NAME} # list of Docker images to use as base name for tags
+          tag-sha: true # add git short SHA as Docker tag
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Login to DockerHub
@@ -48,9 +54,10 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-#          tags: |
-#            ${{ secrets.DOCKER_ORGANIZATION }}/${REPO_NAME}:${COMMIT_SHORT}
-#            ${{ secrets.DOCKER_ORGANIZATION }}/${GITHUB_PATH}:latest
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.MYTOKEN }}
+          tags: |
+            ${{ steps.docker_meta.outputs.tags }}
           build-args: |
           platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/ppc64le,linux/s390x
       - name: Image digest
