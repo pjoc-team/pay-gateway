@@ -26,8 +26,6 @@ jobs:
           env
           echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
           echo "COMMIT_SHORT=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
-#          echo ::set-env name=REPO_NAME::${GITHUB_REPOSITORY#*/}
-#          echo ::set-env name=COMMIT_SHORT::${GITHUB_SHA:0:7}
           env
         shell: bash
 #      - name: Build and push Docker images
