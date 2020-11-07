@@ -10,7 +10,7 @@ import (
 
 // Server 配置服务
 type Server interface {
-	// GetConfig 获取配置并设置到ptr，keys是树形结构
+	// UnmarshalGetConfig 获取配置并设置到ptr，keys是树形结构
 	UnmarshalGetConfig(ctx context.Context, ptr interface{}, keys ...string) error
 }
 

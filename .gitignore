@@ -218,3 +218,4 @@ logs
 *.log
 vendor
 go.sum
+test.data
