@@ -47,5 +47,5 @@ COPY --from=build /app/ /app/
 ADD conf/ /app/conf/
 
 WORKDIR /app
-CMD ["bash", "-c", "/app/main"]
+CMD ["bash", "-c", "/app/main", "--listen-http=:8080", "--listen=:9090", "--log-level=debug"]
 EXPOSE 8080
