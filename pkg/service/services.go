@@ -13,12 +13,15 @@ import (
 type Protocol string
 
 const (
+	// GRPC grpc protocol
 	GRPC Protocol = "grpc"
-	Http Protocol = "http"
+
+	// HTTP http protocol
+	HTTP Protocol = "http"
 )
 
-// StoreIsNil init failed
-var StoreIsNil = errors.New("store is nil")
+// ErrStoreIsNil init failed
+var ErrStoreIsNil = errors.New("store is nil")
 
 // Discovery discovery server
 type Discovery struct {
@@ -28,7 +31,7 @@ type Discovery struct {
 // NewDiscovery new discovery server
 func NewDiscovery(store Store) (*Discovery, error) {
 	if store == nil {
-		return nil, StoreIsNil
+		return nil, ErrStoreIsNil
 	}
 	d := &Discovery{
 		store: store,
@@ -87,7 +90,7 @@ func (d *Discovery) GetService(ctx context.Context, serviceName string) (*Servic
 	return service, nil
 }
 
-// GetService discovery service
+// RegisterService register service
 func (d *Discovery) RegisterService(serviceName string, service *Service) error {
 	err := d.store.Put(serviceName, service)
 	return err

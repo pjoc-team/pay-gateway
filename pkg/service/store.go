@@ -17,6 +17,7 @@ type Store interface {
 	Get(serviceName string) (*Service, error)
 }
 
+// fileStore use file storage to implements the store interface
 type fileStore struct {
 	filePath     string
 	lockFilePath string
@@ -24,6 +25,7 @@ type fileStore struct {
 	lockedFile   *etcdfileutil.LockedFile
 }
 
+// NewFileStore create file store
 func NewFileStore(filePath string) (Store, error) {
 	log := logger.Log()
 
