@@ -1,43 +1,42 @@
-package service
+package discovery
 
 import (
 	"context"
-	"github.com/pjoc-team/pay-gateway/pkg/service"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracinggrpc"
 	"google.golang.org/grpc"
 )
 
-type services struct {
-	Discovery service.Discovery
+// ServiceName service name
+type ServiceName string
+
+const (
+	// DatabaseService db service
+	DatabaseService ServiceName = "database-service"
+	// PayGateway pay gateway
+	PayGateway      ServiceName = "pay-gateway"
+)
+
+type Services struct {
+	Discovery *Discovery
 }
 
-func NewServices(discovery service.Discovery) *services {
-
-}
-
-func (s *services) InitDbClient(ctx context.Context) (pb.PayDatabaseServiceClient, error) {
-	d, err := grpc.DialContext(
-		ctx, "database-service:8080", grpc.WithChainUnaryInterceptor(
-			tracinggrpc.
-				TracingClientInterceptor(),
-		),
-	)
-	if err != nil {
-		return nil, err
+// NewServices create service discovery
+func NewServices(discovery *Discovery) *Services {
+	s := &Services{
+		Discovery: discovery,
 	}
-	client := pb.NewPayDatabaseServiceClient(d)
-	return client, nil
+	return s
 }
 
 // GetChannelClient get channel client of id
-func (s *services) GetChannelClient(ctx context.Context, id string) (
+func (s *Services) GetChannelClient(ctx context.Context, id string) (
 	client pb.PayChannelClient,
 	err error,
 ) {
 	_, err = s.initGrpc(
-		ctx, "database-service", func(conn *grpc.ClientConn) interface{} {
+		ctx, id, func(conn *grpc.ClientConn) interface{} {
 			client = pb.NewPayChannelClient(conn)
 			return client
 		},
@@ -46,10 +45,10 @@ func (s *services) GetChannelClient(ctx context.Context, id string) (
 }
 
 // GetDatabaseService get channel client of id
-func (s *services) GetDatabaseService(ctx context.Context) (pb.PayDatabaseServiceClient, error) {
+func (s *Services) GetDatabaseService(ctx context.Context) (pb.PayDatabaseServiceClient, error) {
 	var client pb.PayDatabaseServiceClient
 	_, err := s.initGrpc(
-		ctx, "database-service", func(conn *grpc.ClientConn) interface{} {
+		ctx, string(DatabaseService), func(conn *grpc.ClientConn) interface{} {
 			client = pb.NewPayDatabaseServiceClient(conn)
 			return client
 		},
@@ -57,7 +56,7 @@ func (s *services) GetDatabaseService(ctx context.Context) (pb.PayDatabaseServic
 	return client, err
 }
 
-func (s *services) initGrpc(
+func (s *Services) initGrpc(
 	ctx context.Context, serviceName string,
 	grpcFunc func(conn *grpc.ClientConn) interface{},
 ) (interface{}, error) {
@@ -67,7 +66,7 @@ func (s *services) initGrpc(
 		log.Errorf("failed to get service: %v error: %v", serviceName, err.Error())
 		return nil, err
 	}
-	if svc.Protocol != "" && svc.Protocol != service.GRPC {
+	if svc.Protocol != "" && svc.Protocol != GRPC {
 		log.Errorf(
 			"service: %v's protocol is not grpc, "+
 				"actual is: %v and continue try to connect by grpc protocol",

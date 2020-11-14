@@ -7,13 +7,16 @@ package service
 import (
 	"github.com/google/wire"
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
+	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/gateway"
 	pay "github.com/pjoc-team/pay-proto/go"
 )
 
-var set = wire.NewSet(InitDbClient)
-
-func NewPayGateway(configclients configclient.ConfigClients, clusterID string, concurrency int) (pay.PayGatewayServer, error) {
-	wire.Build(set, gateway.NewPayGateway)
+// NewPayGateway create pay gateway service
+func NewPayGateway(
+	configclients configclient.ConfigClients, clusterID string, concurrency int,
+	services *discovery.Services,
+) (pay.PayGatewayServer, error) {
+	wire.Build(gateway.NewPayGateway)
 	return nil, nil
 }

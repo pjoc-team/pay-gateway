@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"fmt"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	_ "github.com/pjoc-team/pay-gateway/pkg/config/file"
+	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/metadata"
+	"github.com/pjoc-team/pay-gateway/pkg/util/network"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
 	"github.com/pjoc-team/tracing/tracinggrpc"
@@ -38,17 +41,24 @@ import (
 //	logLevel       = flag.String("log-level", "debug", "log level")
 // )
 
+const (
+	DefaultHttpPort         = 8080
+	DefaultInternalHttpPort = 8081
+	DefaultGRPCPort         = 9090
+)
+
 type Server struct {
 	o                 *options
 	ctx               context.Context
 	g                 *errgroup.Group
 	shutdownFunctions []ShutdownFunction
+	services          *discovery.Services
 }
 
 type options struct {
-	listen         string
-	listenHTTP     string
-	listenInternal string
+	listen         int
+	listenHTTP     int
+	listenInternal int
 	network        string
 	logLevel       string
 
@@ -56,6 +66,7 @@ type options struct {
 	infos             []*GrpcInfo
 	shutdownFunctions []ShutdownFunction
 	flagSet           []*pflag.FlagSet
+	store             string
 }
 
 func (o *options) apply(options ...Option) {
@@ -109,14 +120,39 @@ func wordSepNormalizeFunc(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	return pflag.NormalizedName(name)
 }
 
+func (s *Server) GetServices() *discovery.Services {
+	return s.services
+}
+
+func (s *Server) initServices() (*discovery.Services, error) {
+	store, err := discovery.NewFileStore(s.o.store)
+	if err != nil {
+		logger.Log().Errorf(
+			"failed to init file store of file: %v, error: %v", s.o.store, err.Error(),
+		)
+	}
+	disc, err := discovery.NewDiscovery(store)
+	if err != nil {
+		logger.Log().Errorf(
+			"failed to init file store of file: %v, error: %v", s.o.store, err.Error(),
+		)
+	}
+	services := discovery.NewServices(disc)
+	return services, nil
+}
+
 func (s *Server) flags() *pflag.FlagSet {
 	flagSet := pflag.NewFlagSet("service", pflag.PanicOnError)
 	flagSet.SetNormalizeFunc(wordSepNormalizeFunc)
-	flagSet.StringVar(&s.o.listen, "listen", ":9090", "listen of the gRPC service")
-	flagSet.StringVar(&s.o.listenHTTP, "listen-http", ":8080", "listen of the http service")
-	flagSet.StringVar(&s.o.listenInternal, "listen-internal", ":8081", "listen of the internal http service")
+	flagSet.IntVar(&s.o.listen, "listen", DefaultGRPCPort, "listen of the gRPC service")
+	flagSet.IntVar(&s.o.listenHTTP, "listen-http", DefaultHttpPort, "listen of the http service")
+	flagSet.IntVar(
+		&s.o.listenInternal, "listen-internal", DefaultInternalHttpPort,
+		"listen of the internal http service",
+	)
 	flagSet.StringVar(&s.o.network, "network", "tcp", "network ")
 	flagSet.StringVar(&s.o.logLevel, "log-level", "debug", "log level")
+	flagSet.StringVar(&s.o.store, "store", "./conf/discovery.json", "file to store services")
 	for _, p := range s.o.flagSet {
 		flagSet.AddFlagSet(p)
 	}
@@ -198,7 +234,11 @@ func (s *Server) run() {
 	s.ctx = ctx
 	s.g = g
 
-	s.initGrpc()
+	err2 := s.initGrpc()
+	if err2 != nil {
+		log.Errorf("failed to init grpc, error: %v", err2.Error())
+		log.Fatal(err2.Error())
+	}
 
 	// signal
 	interrupt := make(chan os.Signal, 1)
@@ -262,13 +302,39 @@ func (s *Server) InitLoggerAndTracing(serviceName string) {
 	}
 }
 
-func (s *Server) initGrpc() {
+func (s *Server) initGrpc() error {
 	g := s.g
 	ctx := s.ctx
 	log := logger.Log()
+
+	services, err := s.initServices()
+	if err != nil {
+		log.Errorf("failed to init services, error: %v", err.Error())
+		return err
+	}
+	s.services = services
+
+	ip, err := network.GetHostIP()
+	if err != nil {
+		log.Errorf("failed to get host ip, error: %v", err.Error())
+		return err
+	}
 	for _, info := range s.o.infos {
 		// 注册所有grpc
 		RegisterGrpc(info.Name, info.RegisterGrpcFunc, info.RegisterGatewayFunc)
+		err := s.services.Discovery.RegisterService(
+			info.Name, &discovery.Service{
+				ServiceName: info.Name,
+				Protocol:    discovery.GRPC,
+				IP:          ip,
+				Port:        s.o.listen,
+			},
+		)
+
+		if err != nil {
+			log.Errorf("failed to register grpc: %v, eror: %v", info.Name, err.Error())
+			return err
+		}
 	}
 
 	// grpc server
@@ -284,11 +350,13 @@ func (s *Server) initGrpc() {
 	// init grpc server
 	gs := grpc.NewServer(
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_prometheus.UnaryServerInterceptor,
-			tracinggrpc.TracingServerInterceptor(), // tracing
-			grpc_recovery.UnaryServerInterceptor(opts...),
-		)),
+		grpc.UnaryInterceptor(
+			grpc_middleware.ChainUnaryServer(
+				grpc_prometheus.UnaryServerInterceptor,
+				tracinggrpc.TracingServerInterceptor(), // tracing
+				grpc_recovery.UnaryServerInterceptor(opts...),
+			),
+		),
 	)
 
 	// init grpc gateway
@@ -304,121 +372,138 @@ func (s *Server) initGrpc() {
 	)
 
 	// init grpc
-	g.Go(func() error {
-		log.Infof("grpc listen %s", s.o.listen)
-		l, err := net.Listen(s.o.network, s.o.listen)
-		if err != nil {
-			return err
-		}
-
-		// register health server
-		healthpb.RegisterHealthServer(gs, healthServer)
-
-		// register services
-		for k, registerGrpc := range GrpcServices {
-			log.Infof("initializing grpc: %v", k)
-			err := registerGrpc.RegisterGrpcFunc(s.ctx, gs)
+	g.Go(
+		func() error {
+			log.Infof("grpc listen %s", s.o.listen)
+			l, err := net.Listen(s.o.network, fmt.Sprintf(":%d", s.o.listen))
 			if err != nil {
-				log.Fatalf("failed to register grpc: %v error: %v", k, err.Error())
-			} else {
-				log.Infof("succeed register grpc: %v", k)
+				return err
 			}
-		}
 
-		for k, serviceInfo := range gs.GetServiceInfo() {
-			// logger.Infof("services name: %v info: %v", k, serviceInfo.Metadata, serviceInfo.Methods)
-			for _, method := range serviceInfo.Methods {
-				log.Infof("services name: %v info: %v method: %v", k, serviceInfo.Metadata, method.Name)
+			// register health server
+			healthpb.RegisterHealthServer(gs, healthServer)
+
+			// register services
+			for k, registerGrpc := range GrpcServices {
+				log.Infof("initializing grpc: %v", k)
+				err := registerGrpc.RegisterGrpcFunc(s.ctx, gs)
+				if err != nil {
+					log.Fatalf("failed to register grpc: %v error: %v", k, err.Error())
+				} else {
+					log.Infof("succeed register grpc: %v", k)
+				}
 			}
-		}
 
-		grpc_prometheus.Register(gs)
-
-		s.shutdownFunctions = append(s.shutdownFunctions, func(ctx context.Context) {
-			gs.GracefulStop()
-
-			if err := l.Close(); err != nil {
-				log.Errorf("Failed to close %s %s, err: %v", s.o.network, s.o.listen, err)
+			for k, serviceInfo := range gs.GetServiceInfo() {
+				// logger.Infof("services name: %v info: %v", k, serviceInfo.Metadata, serviceInfo.Methods)
+				for _, method := range serviceInfo.Methods {
+					log.Infof(
+						"services name: %v info: %v method: %v", k, serviceInfo.Metadata,
+						method.Name,
+					)
+				}
 			}
-		})
 
-		return gs.Serve(l)
-	})
+			grpc_prometheus.Register(gs)
+
+			s.shutdownFunctions = append(
+				s.shutdownFunctions, func(ctx context.Context) {
+					gs.GracefulStop()
+
+					if err := l.Close(); err != nil {
+						log.Errorf("Failed to close %s %s, err: %v", s.o.network, s.o.listen, err)
+					}
+				},
+			)
+
+			return gs.Serve(l)
+		},
+	)
 
 	// http admin
-	g.Go(func() error {
-		log.Infof("admin listen %s", s.o.listenInternal)
-		listen, err := net.Listen("tcp", s.o.listenInternal)
-		if err != nil {
-			log.Errorf("failed to listen: %v error: %v", s.o.listenInternal, err.Error())
-			return err
-		}
-		s.shutdownFunctions = append(s.shutdownFunctions, func(ctx context.Context) {
-			err2 := listen.Close()
-			if err2 != nil {
-				log.Errorf("failed to close: %v error: %v", s.o.listenInternal, err2.Error())
-			} else {
-				log.Infof("http admin closed")
+	g.Go(
+		func() error {
+			log.Infof("admin listen %s", s.o.listenInternal)
+			listen, err := net.Listen("tcp", fmt.Sprintf(":%d", s.o.listenInternal))
+			if err != nil {
+				log.Errorf("failed to listen: %v error: %v", s.o.listenInternal, err.Error())
+				return err
 			}
-		})
+			s.shutdownFunctions = append(
+				s.shutdownFunctions, func(ctx context.Context) {
+					err2 := listen.Close()
+					if err2 != nil {
+						log.Errorf(
+							"failed to close: %v error: %v", s.o.listenInternal, err2.Error(),
+						)
+					} else {
+						log.Infof("http admin closed")
+					}
+				},
+			)
 
-		internalHTTPMux.Handle("/metrics", promhttp.Handler())
-		h := healthInterceptor(healthServer)
-		internalHTTPMux.Handle("/health", h)
-		// pprof
-		if log.IsDebugEnabled() {
-			internalHTTPMux.HandleFunc("/debug/pprof/", pprof.Index)
-		}
+			internalHTTPMux.Handle("/metrics", promhttp.Handler())
+			h := healthInterceptor(healthServer)
+			internalHTTPMux.Handle("/health", h)
+			// pprof
+			if log.IsDebugEnabled() {
+				internalHTTPMux.HandleFunc("/debug/pprof/", pprof.Index)
+			}
 
-		httpServer := &http.Server{
-			Addr:         s.o.listenInternal,
-			ReadTimeout:  10 * time.Second,
-			WriteTimeout: 10 * time.Second,
-			Handler:      tracingServerInterceptor(internalHTTPMux),
-		}
-		err = httpServer.Serve(listen)
-		log.Infof("http stopped")
-		return err
-	})
+			httpServer := &http.Server{
+				Addr:         fmt.Sprintf(":%d", s.o.listenInternal),
+				ReadTimeout:  10 * time.Second,
+				WriteTimeout: 10 * time.Second,
+				Handler:      tracingServerInterceptor(internalHTTPMux),
+			}
+			err = httpServer.Serve(listen)
+			log.Infof("http stopped")
+			return err
+		},
+	)
 
 	// grpc gateway
-	g.Go(func() error {
+	g.Go(
+		func() error {
 
-		// register grpc gateway services
-		for k, registerGrpc := range GrpcServices {
-			log.Infof("initializing grpc: %v", k)
-			err := registerGrpc.RegisterGatewayFunc(ctx, mux)
-			if err != nil {
-				log.Fatalf("failed to register grpc: %v error: %v", k, err.Error())
-			} else {
-				log.Infof("succeed register grpc gateway: %v", k)
+			// register grpc gateway services
+			for k, registerGrpc := range GrpcServices {
+				log.Infof("initializing grpc: %v", k)
+				err := registerGrpc.RegisterGatewayFunc(ctx, mux)
+				if err != nil {
+					log.Fatalf("failed to register grpc: %v error: %v", k, err.Error())
+				} else {
+					log.Infof("succeed register grpc gateway: %v", k)
+				}
 			}
-		}
 
-		// 注入tracing信息
-		var h http.Handler = mux
-		for _, interceptor := range httpInterceptors {
-			h = interceptor(h)
-		}
-
-		hs := &http.Server{
-			Addr:    s.o.listenHTTP,
-			Handler: h,
-		}
-
-		s.shutdownFunctions = append(s.shutdownFunctions, func(ctx context.Context) {
-			if err := hs.Shutdown(context.Background()); err != nil {
-				log.Errorf("Failed to shutdown http gateway server: %v", err)
+			// 注入tracing信息
+			var h http.Handler = mux
+			for _, interceptor := range httpInterceptors {
+				h = interceptor(h)
 			}
-		})
 
-		log.Infof("grpc gateway listen %s", s.o.listenHTTP)
-		if err := hs.ListenAndServe(); err != http.ErrServerClosed {
-			log.Errorf("Failed to listen and serve: %v", err)
-			return err
-		}
+			hs := &http.Server{
+				Addr:    fmt.Sprintf(":%d", s.o.listenHTTP),
+				Handler: h,
+			}
 
-		return nil
-	})
+			s.shutdownFunctions = append(
+				s.shutdownFunctions, func(ctx context.Context) {
+					if err := hs.Shutdown(context.Background()); err != nil {
+						log.Errorf("Failed to shutdown http gateway server: %v", err)
+					}
+				},
+			)
 
+			log.Infof("grpc gateway listen %s", s.o.listenHTTP)
+			if err := hs.ListenAndServe(); err != http.ErrServerClosed {
+				log.Errorf("Failed to listen and serve: %v", err)
+				return err
+			}
+
+			return nil
+		},
+	)
+	return nil
 }

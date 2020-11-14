@@ -1,4 +1,4 @@
-package service
+package discovery
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-// Store storage for services
+// Store storage for Services
 type Store interface {
 	// Put put service
 	Put(serviceName string, service *Service) error

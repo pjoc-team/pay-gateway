@@ -3,8 +3,8 @@ package gateway
 import (
 	"fmt"
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
+	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/generator"
-	"github.com/pjoc-team/pay-gateway/pkg/service"
 	"github.com/pjoc-team/pay-gateway/pkg/validator"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
@@ -13,11 +13,10 @@ import (
 
 // PayGatewayService pay gateway service
 type PayGatewayService struct {
-	dbServiceClient pb.PayDatabaseServiceClient
-	discovery       *service.Discovery
 	configClients   configclient.ConfigClients
 	payConfig       *configclient.PayConfig
 	orderGenerator  *generator.Generator
+	services        *discovery.Services
 }
 
 // RequestContext context of request
@@ -77,7 +76,7 @@ func (svc *PayGatewayService) Pay(ctx context.Context, request *pb.PayRequest) (
 	}
 
 	var client pb.PayChannelClient
-	client, err = svc.discovery.GetChannelClient(request.GetChannelId())
+	client, err = svc.services.GetChannelClient(ctx, request.GetChannelId())
 	if client == nil || err != nil {
 		log.Errorf("Failed to get channelClient! channelID: %s, error: %s, ", request.GetChannelId(), err.Error())
 		return BuildSystemErrorResponse(err), nil
@@ -142,10 +141,10 @@ func (svc *PayGatewayService) processChannelIDIfNotPresent(ctx context.Context, 
 }
 
 // NewPayGateway new gateway service
-func NewPayGateway(cc configclient.ConfigClients, clusterID string, concurrency int, dbServiceClient pb.PayDatabaseServiceClient) (pb.PayGatewayServer, error) {
+func NewPayGateway(cc configclient.ConfigClients, clusterID string, concurrency int, services *discovery.Services) (pb.PayGatewayServer, error) {
 	payGatewayService := &PayGatewayService{}
 	payGatewayService.configClients = cc
 	payGatewayService.orderGenerator = generator.New(clusterID, concurrency)
-	payGatewayService.dbServiceClient = dbServiceClient
+	payGatewayService.services = services
 	return payGatewayService, nil
 }

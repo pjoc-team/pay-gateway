@@ -6,26 +6,23 @@
 package service
 
 import (
-	"github.com/google/wire"
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
+	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/gateway"
 	"github.com/pjoc-team/pay-proto/go"
 )
 
+import (
+	_ "github.com/pjoc-team/pay-gateway/pkg/config/file"
+)
+
 // Injectors from wire.go:
 
-func NewPayGateway(configclients configclient.ConfigClients, clusterID string, concurrency int) (pay.PayGatewayServer, error) {
-	payDatabaseServiceClient, err := InitDbClient()
-	if err != nil {
-		return nil, err
-	}
-	payGatewayServer, err := gateway.NewPayGateway(configclients, clusterID, concurrency, payDatabaseServiceClient)
+// NewPayGateway create pay gateway service
+func NewPayGateway(configclients configclient.ConfigClients, clusterID string, concurrency int, services *discovery.Services) (pay.PayGatewayServer, error) {
+	payGatewayServer, err := gateway.NewPayGateway(configclients, clusterID, concurrency, services)
 	if err != nil {
 		return nil, err
 	}
 	return payGatewayServer, nil
 }
-
-// wire.go:
-
-var set = wire.NewSet(InitDbClient)

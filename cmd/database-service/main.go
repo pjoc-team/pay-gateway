@@ -6,7 +6,6 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pjoc-team/pay-gateway/internal/service"
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
-	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	pay "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/spf13/pflag"
@@ -14,17 +13,21 @@ import (
 	"os"
 )
 
+const serviceName = "pay-gateway"
+
 var (
-	c = &initConfig{}
+	c = &MysqlConfig{}
 )
 
-type initConfig struct {
-	clusterID   string `validate:"required"`
-	concurrency int    `validate:"gt=0"`
+// MysqlConfig mysql配置
+type MysqlConfig struct {
+	URL     string `yaml:"url" json:"url"`
+	MaxConn int    `yaml:"max_conn" json:"max_conn"`
+	MaxIdle int    `yaml:"max_idle" json:"max_idle"`
 }
 
 func flagSet() *pflag.FlagSet {
-	set := pflag.NewFlagSet("pay-gateway", pflag.ExitOnError)
+	set := pflag.NewFlagSet("database-service", pflag.ExitOnError)
 	set.StringVar(&c.clusterID, "cluster-id", "01", "cluster id for multiply cluster")
 	set.IntVar(&c.concurrency, "concurrency", 10000, "max concurrency order request per seconds")
 	return set
@@ -46,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	s, fs, err := service.NewServer(discovery.PayGateway)
+	s, fs, err := service.NewServer(serviceName)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
