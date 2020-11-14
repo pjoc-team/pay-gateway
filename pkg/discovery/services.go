@@ -2,10 +2,12 @@ package discovery
 
 import (
 	"context"
+	grpcdialer "github.com/blademainer/commons/pkg/grpc"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracinggrpc"
 	"google.golang.org/grpc"
+	"net/url"
 )
 
 // ServiceName service name
@@ -85,11 +87,24 @@ func (s *Services) initGrpc(
 		return nil, err
 	}
 
-	d, err := grpc.DialContext(
-		ctx, target, grpc.WithChainUnaryInterceptor(
+	u, err := url.Parse(target)
+	if err != nil {
+		log.Errorf(
+			"failed to build target: %v of service: %v error: %v", target, serviceName, err.Error(),
+		)
+		return nil, err
+	}
+	d, err := grpcdialer.DialUrl(
+		ctx, *u, grpc.WithChainUnaryInterceptor(
 			tracinggrpc.TracingClientInterceptor(),
 		),
 	)
+
+	// d, err := grpc.DialContext(
+	// 	ctx, target, grpc.WithChainUnaryInterceptor(
+	// 		tracinggrpc.TracingClientInterceptor(),
+	// 	),
+	// )
 	if err != nil {
 		return nil, err
 	}

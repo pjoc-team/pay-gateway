@@ -66,7 +66,7 @@ func (s *Service) String() string {
 // BuildTarget build rpc connection target
 func (s *Service) BuildTarget(ctx context.Context) (string, error) {
 	log := logger.ContextLog(ctx)
-	target := fmt.Sprintf("%s:%d", s.ServiceName, s.Port)
+	target := fmt.Sprintf("http://%s:%d", s.IP, s.Port)
 	if log.IsDebugEnabled() {
 		log.Debugf("build service: %#v to target: %v", s, target)
 	}
@@ -77,12 +77,12 @@ func (s *Service) BuildTarget(ctx context.Context) (string, error) {
 func (d *Discovery) GetService(ctx context.Context, serviceName string) (*Service, error) {
 	log := logger.ContextLog(ctx)
 	service, err := d.store.Get(serviceName)
-	if err != nil { // not registered
+	if err != nil || service == nil { // not registered
 		log.Warnf("not found service: %v, so use serviceName and default port", serviceName)
 		s := &Service{
 			ServiceName: serviceName,
 			Protocol:    GRPC,
-			IP:          "",
+			IP:          serviceName,
 			Port:        9090,
 		}
 		return s, nil
@@ -92,7 +92,13 @@ func (d *Discovery) GetService(ctx context.Context, serviceName string) (*Servic
 
 // RegisterService register service
 func (d *Discovery) RegisterService(serviceName string, service *Service) error {
+	log := logger.Log()
 	err := d.store.Put(serviceName, service)
+	if err != nil {
+		log.Errorf("failed to register service: %#v, error: %v", service, err.Error())
+		return err
+	}
+	log.Infof("succeed to register service: %#v", service)
 	return err
 }
 

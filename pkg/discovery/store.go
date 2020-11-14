@@ -42,6 +42,7 @@ func NewFileStore(filePath string) (Store, error) {
 	}()
 	lockFilePath := fmt.Sprintf("%s.lock", filePath)
 
+
 	fs := &fileStore{
 		filePath:     filePath,
 		lockFilePath: lockFilePath,

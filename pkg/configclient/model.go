@@ -2,10 +2,12 @@ package configclient
 
 // PayConfig 支付配置
 type PayConfig struct {
-	ClusterID        string `json:"cluster_id" yaml:"clusterID"`
-	Concurrency      int    `json:"concurrency" yaml:"concurrency"`
-	NotifyURLPattern string `json:"notify_url_pattern" yaml:"notifyURLPattern"` // 通知地址的正则，必须包含{gateway_order_id}
-	ReturnURLPattern string `json:"return_url_pattern" yaml:"returnURLPattern"` // 跳转地址的正则，必须包含{gateway_order_id}
+	ClusterID   string `json:"cluster_id" yaml:"clusterID"`
+	Concurrency int    `json:"concurrency" yaml:"concurrency"`
+	// 通知地址的正则，必须包含{gateway_order_id}
+	NotifyURLPattern string `json:"notify_url_pattern" yaml:"notifyURLPattern" validate:"required"`
+	// 跳转地址的正则，必须包含{gateway_order_id}
+	ReturnURLPattern string `json:"return_url_pattern" yaml:"returnURLPattern" validate:"required"`
 }
 
 // NoticeConfig 通知配置
@@ -27,10 +29,8 @@ type ServiceConfig struct {
 
 // ChannelServiceConfig 渠道微服务配置
 type ChannelServiceConfig struct {
-	ChannelID   string `json:"channel_id" yaml:"channelID"`
-	ServiceName string `json:"service_name" yaml:"serviceName"`
-	Host        string `json:"host" yaml:"host"`
-	Port        int    `json:"port" yaml:"port"`
+	ChannelID   string `json:"channel_id" yaml:"channelID"  validate:"required"`
+	ServiceName string `json:"service_name" yaml:"serviceName"  validate:"required"`
 }
 
 // MerchantConfig 商户配置

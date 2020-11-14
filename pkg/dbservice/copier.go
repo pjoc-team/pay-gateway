@@ -1,4 +1,4 @@
-package service
+package dbservice
 
 import (
 	"github.com/pjoc-team/pay-gateway/pkg/dbservice/model"

@@ -1,3 +1,4 @@
+/mysql
 bin
 ### macOS template
 # General
@@ -219,3 +220,4 @@ logs
 vendor
 go.sum
 test.data
+conf/discovery.json

@@ -19,8 +19,8 @@ var (
 )
 
 type initConfig struct {
-	clusterID   string `validate:"required"`
-	concurrency int    `validate:"gt=0"`
+	clusterID string `validate:"required"`
+	concurrency int  `validate:"gt=0"`
 }
 
 func flagSet() *pflag.FlagSet {
@@ -42,23 +42,26 @@ func main() {
 	configClients, configFlagSet, err := configclient.NewConfigClients(
 		configclient.WithMerchantConfigServer(true),
 		configclient.WithAppIDChannelConfigServer(true),
+		configclient.WithPayConfigServer(true),
 	)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	s, fs, err := service.NewServer(discovery.PayGateway.String())
+	s, err := service.NewServer(discovery.PayGateway.String())
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 	set := flagSet()
 	set.AddFlagSet(configFlagSet)
-	set.AddFlagSet(fs)
+	set.AddFlagSet(s.FlagSet)
 	err = set.Parse(os.Args)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	payGateway, err := service.NewPayGateway(configClients, c.clusterID, c.concurrency, s.GetServices())
+	payGateway, err := service.NewPayGateway(
+		configClients, c.clusterID, c.concurrency, s.GetServices(),
+	)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

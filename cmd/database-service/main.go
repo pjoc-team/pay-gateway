@@ -4,32 +4,36 @@ import (
 	"context"
 	"github.com/go-playground/validator/v10"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/pjoc-team/pay-gateway/internal/service"
-	"github.com/pjoc-team/pay-gateway/pkg/configclient"
+	"github.com/pjoc-team/pay-gateway/pkg/discovery"
+	"github.com/pjoc-team/pay-gateway/pkg/util/db"
 	pay "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/spf13/pflag"
 	"google.golang.org/grpc"
 	"os"
+	"time"
 )
 
 const serviceName = "pay-gateway"
 
 var (
-	c = &MysqlConfig{}
+	c = &db.MysqlConfig{}
 )
 
-// MysqlConfig mysql配置
-type MysqlConfig struct {
-	URL     string `yaml:"url" json:"url"`
-	MaxConn int    `yaml:"max_conn" json:"max_conn"`
-	MaxIdle int    `yaml:"max_idle" json:"max_idle"`
-}
-
 func flagSet() *pflag.FlagSet {
-	set := pflag.NewFlagSet("database-service", pflag.ExitOnError)
-	set.StringVar(&c.clusterID, "cluster-id", "01", "cluster id for multiply cluster")
-	set.IntVar(&c.concurrency, "concurrency", 10000, "max concurrency order request per seconds")
+	set := pflag.NewFlagSet(discovery.DatabaseService.String(), pflag.ExitOnError)
+	set.StringVar(
+		&c.URL, "url",
+		"root:111@tcp(127.0.0.1:3306)/pay_gateway?charset=utf8mb4&parseTime=true&loc=Local"+
+			"&timeout=10s&collation=utf8mb4_unicode_ci", "mysql dsn",
+	)
+	set.IntVar(&c.MaxConn, "max-conn", 100, "max connection")
+	set.DurationVarP(
+		&c.MaxIdle, "max-idle", "w", 120*time.Second,
+		"seconds of idle connection",
+	)
 	return set
 }
 
@@ -42,39 +46,34 @@ func main() {
 		log.Fatalf("illegal configs, error: %v", err.Error())
 	}
 
-	configClients, configFlagSet, err := configclient.NewConfigClients(
-		configclient.WithMerchantConfigServer(true),
-		configclient.WithAppIDChannelConfigServer(true),
-	)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	s, fs, err := service.NewServer(serviceName)
+	s, err := service.NewServer(discovery.DatabaseService.String())
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 	set := flagSet()
-	set.AddFlagSet(configFlagSet)
-	set.AddFlagSet(fs)
+	set.AddFlagSet(s.FlagSet)
 	err = set.Parse(os.Args)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	payGateway, err := service.NewPayGateway(configClients, c.clusterID, c.concurrency, s.GetServices())
+	dbService, err := service.NewDatabaseService(s.Ctx, c)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 	grpcInfo := &service.GrpcInfo{
 		RegisterGrpcFunc: func(ctx context.Context, server *grpc.Server) error {
-			pay.RegisterPayGatewayServer(server, payGateway)
+			pay.RegisterPayDatabaseServiceServer(server, dbService)
 			return nil
 		},
 		RegisterGatewayFunc: func(ctx context.Context, mux *runtime.ServeMux) error {
-			err := pay.RegisterPayGatewayHandlerServer(ctx, mux, payGateway)
+			err := pay.RegisterPayDatabaseServiceHandlerServer(ctx, mux, dbService)
 			return err
 		},
-		Name: serviceName,
+		Name: discovery.DatabaseService.String(),
 	}
 	s.Start(service.WithGrpc(grpcInfo))
 }

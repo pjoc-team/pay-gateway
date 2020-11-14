@@ -42,17 +42,24 @@ import (
 // )
 
 const (
-	DefaultHttpPort         = 8080
+	// DefaultHttpPort default http port
+	DefaultHttpPort = 8080
+	// DefaultInternalHttpPort default internal http port
 	DefaultInternalHttpPort = 8081
-	DefaultGRPCPort         = 9090
+	// DefaultGRPCPort default grpc port
+	DefaultGRPCPort = 9090
 )
 
+// Server defined server
 type Server struct {
+	Ctx     context.Context
+	FlagSet *pflag.FlagSet
+
 	o                 *options
-	ctx               context.Context
 	g                 *errgroup.Group
 	shutdownFunctions []ShutdownFunction
 	services          *discovery.Services
+	cancel            func()
 }
 
 type options struct {
@@ -99,16 +106,21 @@ func WithGrpc(info *GrpcInfo) Option {
 //	}
 // }
 
-func NewServer(name string, infos ...*GrpcInfo) (*Server, *pflag.FlagSet, error) {
+func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 	o := &options{
 		name:  name,
 		infos: infos,
 	}
 	s := &Server{
-		o: o,
+		o:        o,
+		services: &discovery.Services{},
 	}
 	fs := s.flags()
-	return s, fs, nil
+	s.FlagSet = fs
+	rootContext, cancel := context.WithCancel(context.Background())
+	s.Ctx = rootContext
+	s.cancel = cancel
+	return s, nil
 }
 
 func wordSepNormalizeFunc(f *pflag.FlagSet, name string) pflag.NormalizedName {
@@ -228,10 +240,8 @@ func (s *Server) run() {
 	s.shutdownFunctions = append(s.shutdownFunctions, s.o.shutdownFunctions...)
 
 	// init
-	rootContext, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	g, ctx := errgroup.WithContext(rootContext)
-	s.ctx = ctx
+	defer s.cancel()
+	g, ctx := errgroup.WithContext(s.Ctx)
 	s.g = g
 
 	err2 := s.initGrpc()
@@ -260,7 +270,7 @@ func (s *Server) run() {
 		shutdown(timeout)
 	}
 
-	cancel()
+	s.cancel()
 	err := g.Wait()
 	if err != nil {
 		log.Errorf("server returning an error: %v", err)
@@ -304,7 +314,7 @@ func (s *Server) InitLoggerAndTracing(serviceName string) {
 
 func (s *Server) initGrpc() error {
 	g := s.g
-	ctx := s.ctx
+	ctx := s.Ctx
 	log := logger.Log()
 
 	services, err := s.initServices()
@@ -312,7 +322,8 @@ func (s *Server) initGrpc() error {
 		log.Errorf("failed to init services, error: %v", err.Error())
 		return err
 	}
-	s.services = services
+
+	*s.services = *services
 
 	ip, err := network.GetHostIP()
 	if err != nil {
@@ -374,7 +385,7 @@ func (s *Server) initGrpc() error {
 	// init grpc
 	g.Go(
 		func() error {
-			log.Infof("grpc listen %s", s.o.listen)
+			log.Infof("grpc listen %v", s.o.listen)
 			l, err := net.Listen(s.o.network, fmt.Sprintf(":%d", s.o.listen))
 			if err != nil {
 				return err
@@ -386,7 +397,7 @@ func (s *Server) initGrpc() error {
 			// register services
 			for k, registerGrpc := range GrpcServices {
 				log.Infof("initializing grpc: %v", k)
-				err := registerGrpc.RegisterGrpcFunc(s.ctx, gs)
+				err := registerGrpc.RegisterGrpcFunc(s.Ctx, gs)
 				if err != nil {
 					log.Fatalf("failed to register grpc: %v error: %v", k, err.Error())
 				} else {
@@ -423,7 +434,7 @@ func (s *Server) initGrpc() error {
 	// http admin
 	g.Go(
 		func() error {
-			log.Infof("admin listen %s", s.o.listenInternal)
+			log.Infof("admin listen %v", s.o.listenInternal)
 			listen, err := net.Listen("tcp", fmt.Sprintf(":%d", s.o.listenInternal))
 			if err != nil {
 				log.Errorf("failed to listen: %v error: %v", s.o.listenInternal, err.Error())
@@ -496,7 +507,7 @@ func (s *Server) initGrpc() error {
 				},
 			)
 
-			log.Infof("grpc gateway listen %s", s.o.listenHTTP)
+			log.Infof("grpc gateway listen %v", s.o.listenHTTP)
 			if err := hs.ListenAndServe(); err != http.ErrServerClosed {
 				log.Errorf("Failed to listen and serve: %v", err)
 				return err

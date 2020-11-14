@@ -6,9 +6,13 @@
 package service
 
 import (
+	"context"
+	"github.com/google/wire"
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
+	"github.com/pjoc-team/pay-gateway/pkg/dbservice"
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/gateway"
+	"github.com/pjoc-team/pay-gateway/pkg/util/db"
 	"github.com/pjoc-team/pay-proto/go"
 )
 
@@ -26,3 +30,20 @@ func NewPayGateway(configclients configclient.ConfigClients, clusterID string, c
 	}
 	return payGatewayServer, nil
 }
+
+// NewPayGateway create pay gateway service
+func NewDatabaseService(ctx context.Context, config *db.MysqlConfig) (pay.PayDatabaseServiceServer, error) {
+	gormDB, err := db.InitDb(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	payDatabaseServiceServer, err := dbservice.NewServer(gormDB)
+	if err != nil {
+		return nil, err
+	}
+	return payDatabaseServiceServer, nil
+}
+
+// wire.go:
+
+var set = wire.NewSet(db.InitDb)

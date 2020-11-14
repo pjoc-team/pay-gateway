@@ -11,10 +11,15 @@ import (
 // ConfigClients 所有配置
 type ConfigClients interface {
 	// GetAppChannelConfig 获取渠道配置
-	GetAppChannelConfig(ctx context.Context, appID string, method string) ([]*AppIDChannelConfig, error)
+	GetAppChannelConfig(ctx context.Context, appID string, method string) (
+		[]*AppIDChannelConfig, error,
+	)
 
 	// GetAppConfig 获取应用配置
 	GetAppConfig(ctx context.Context, appID string) (*MerchantConfig, error)
+
+	// GetPayConfig 获取支付配置
+	GetPayConfig(ctx context.Context) (*PayConfig, error)
 }
 
 // configClients 所有配置
@@ -36,7 +41,9 @@ type configClient struct {
 	configURL ConfigURL
 }
 
-func (c *configClient) UnmarshalGetConfig(ctx context.Context, ptr interface{}, keys ...string) error {
+func (c *configClient) UnmarshalGetConfig(
+	ctx context.Context, ptr interface{}, keys ...string,
+) error {
 	log := logger.ContextLog(ctx)
 	if c == nil {
 		err := fmt.Errorf("config is not initialized")
@@ -84,7 +91,9 @@ func newConfigClient(url ConfigURL) (*configClient, error) {
 	}
 	server, err := config.InitConfigServer(url.URL())
 	if err != nil {
-		log.Fatalf("failed to init config client: %v url: %v error: %v", url.Flag(), url.URL(), err.Error())
+		log.Fatalf(
+			"failed to init config client: %v url: %v error: %v", url.Flag(), url.URL(), err.Error(),
+		)
 		return nil, err
 	}
 	c.s = server
@@ -139,12 +148,17 @@ func (c *configClients) initConfigs(o *options) error {
 	return nil
 }
 
-func (c *configClients) GetAppChannelConfig(ctx context.Context, appID string, method string) ([]*AppIDChannelConfig, error) {
+func (c *configClients) GetAppChannelConfig(
+	ctx context.Context, appID string, method string,
+) ([]*AppIDChannelConfig, error) {
 	log := logger.ContextLog(ctx)
 	appConfig := make([]*AppIDChannelConfig, 0)
 	err := c.AppIDChannelConfigServer.UnmarshalGetConfig(ctx, &appConfig, appID, method)
 	if err != nil {
-		log.Errorf("failed to get channel config of appID: %v method: %v error: %v", appID, method, err.Error())
+		log.Errorf(
+			"failed to get channel config of appID: %v method: %v error: %v", appID, method,
+			err.Error(),
+		)
 		return nil, err
 	}
 	return appConfig, nil
@@ -155,8 +169,24 @@ func (c *configClients) GetAppConfig(ctx context.Context, appID string) (*Mercha
 	merchantConfig := &MerchantConfig{}
 	err := c.AppIDChannelConfigServer.UnmarshalGetConfig(ctx, merchantConfig, appID)
 	if err != nil {
-		log.Errorf("failed to get merchant config of appID: %v method: %v error: %v", appID, err.Error())
+		log.Errorf(
+			"failed to get merchant config of appID: %v method: %v error: %v", appID, err.Error(),
+		)
 		return nil, err
 	}
 	return merchantConfig, nil
+}
+
+func (c *configClients) GetPayConfig(ctx context.Context) (*PayConfig, error) {
+	log := logger.ContextLog(ctx)
+	payConfig := &PayConfig{}
+	err := c.AppIDChannelConfigServer.UnmarshalGetConfig(ctx, payConfig)
+	if err != nil {
+		log.Errorf(
+			"failed to get pay config of error: %v", payConfig,
+			err.Error(),
+		)
+		return nil, err
+	}
+	return payConfig, nil
 }

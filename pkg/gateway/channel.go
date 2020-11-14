@@ -20,15 +20,14 @@ func (svc *PayGatewayService) GenerateChannelPayRequest(ctx context.Context, req
 	}
 	channelPayRequest.GatewayOrderId = requestContext.GatewayOrderID
 
-	if svc.payConfig.NotifyURLPattern == "" {
-		log.Errorf("NotifyURLPattern is null!!!")
-	}
-	if svc.payConfig.ReturnURLPattern == "" {
-		log.Errorf("ReturnURLPattern is null!!!")
+	payConfig, err := svc.configClients.GetPayConfig(ctx)
+	if err != nil{
+		log.Errorf("failed to pay config, error: %v", err.Error())
+		return nil, err
 	}
 	// reset notify url
-	channelPayRequest.NotifyUrl = ReplaceGatewayOrderID(svc.payConfig.NotifyURLPattern, channelPayRequest.GatewayOrderId)
-	channelPayRequest.ReturnUrl = ReplaceGatewayOrderID(svc.payConfig.ReturnURLPattern, channelPayRequest.GatewayOrderId)
+	channelPayRequest.NotifyUrl = ReplaceGatewayOrderID(payConfig.NotifyURLPattern, channelPayRequest.GatewayOrderId)
+	channelPayRequest.ReturnUrl = ReplaceGatewayOrderID(payConfig.ReturnURLPattern, channelPayRequest.GatewayOrderId)
 	channelPayRequest.ChannelAccount = requestContext.ChannelAccount
 	channelPayRequest.PayAmount = request.GetPayAmount()
 	product := &pay.Product{}

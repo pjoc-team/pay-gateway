@@ -13,4 +13,4 @@ sign="`cat $curDir/${orderId}.tmp | awk '{print $NF}'`"
 echo "sign===$sign"
 json='{"pay_amount":1, "out_trade_no": "'${orderId}'", "order_time":"'${nowDate}'", "app_id":"1", "channel_id":"demo", "sign_type":"RSA", "method":"WEB", "sign":"'$sign'"}'
 echo "final json: $json"
-curl -d "$json" "http://127.0.0.1:8080/v1/pay/WEB"
+curl -vd "$json" "http://127.0.0.1:8080/v1/pay/WEB"

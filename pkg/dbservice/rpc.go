@@ -1,4 +1,4 @@
-package service
+package dbservice
 
 import (
 	"github.com/jinzhu/copier"
