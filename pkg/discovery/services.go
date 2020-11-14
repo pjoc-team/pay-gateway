@@ -15,8 +15,12 @@ const (
 	// DatabaseService db service
 	DatabaseService ServiceName = "database-service"
 	// PayGateway pay gateway
-	PayGateway      ServiceName = "pay-gateway"
+	PayGateway ServiceName = "pay-gateway"
 )
+
+func (s ServiceName) String() string {
+	return string(s)
+}
 
 type Services struct {
 	Discovery *Discovery
@@ -48,7 +52,7 @@ func (s *Services) GetChannelClient(ctx context.Context, id string) (
 func (s *Services) GetDatabaseService(ctx context.Context) (pb.PayDatabaseServiceClient, error) {
 	var client pb.PayDatabaseServiceClient
 	_, err := s.initGrpc(
-		ctx, string(DatabaseService), func(conn *grpc.ClientConn) interface{} {
+		ctx, DatabaseService.String(), func(conn *grpc.ClientConn) interface{} {
 			client = pb.NewPayDatabaseServiceClient(conn)
 			return client
 		},

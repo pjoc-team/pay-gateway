@@ -46,7 +46,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	s, fs, err := service.NewServer(discovery.PayGateway)
+	s, fs, err := service.NewServer(discovery.PayGateway.String())
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -71,7 +71,7 @@ func main() {
 			err := pay.RegisterPayGatewayHandlerServer(ctx, mux, payGateway)
 			return err
 		},
-		Name: serviceName,
+		Name: discovery.PayGateway.String(),
 	}
 	s.Start(service.WithGrpc(grpcInfo))
 }
