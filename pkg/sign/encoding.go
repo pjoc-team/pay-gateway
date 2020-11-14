@@ -8,11 +8,14 @@ import (
 	"io/ioutil"
 )
 
+// Type
+type Type string
+
 const (
 	// TypeMd5 md5 sign
-	TypeMd5 = "MD5"
-	// Sha256WithRsa ras sign
-	Sha256WithRsa = "RSA"
+	TypeMd5 Type = "MD5"
+	// TypeSha256WithRSA ras sign
+	TypeSha256WithRSA Type = "RSA"
 )
 
 func init() {

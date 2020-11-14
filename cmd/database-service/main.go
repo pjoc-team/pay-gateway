@@ -16,14 +16,14 @@ import (
 	"time"
 )
 
-const serviceName = "pay-gateway"
+const serviceName = discovery.DatabaseService
 
 var (
 	c = &db.MysqlConfig{}
 )
 
 func flagSet() *pflag.FlagSet {
-	set := pflag.NewFlagSet(discovery.DatabaseService.String(), pflag.ExitOnError)
+	set := pflag.NewFlagSet(serviceName.String(), pflag.ExitOnError)
 	set.StringVar(
 		&c.URL, "url",
 		"root:111@tcp(127.0.0.1:3306)/pay_gateway?charset=utf8mb4&parseTime=true&loc=Local"+
@@ -49,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	s, err := service.NewServer(discovery.DatabaseService.String())
+	s, err := service.NewServer(serviceName.String())
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -73,7 +73,7 @@ func main() {
 			err := pay.RegisterPayDatabaseServiceHandlerServer(ctx, mux, dbService)
 			return err
 		},
-		Name: discovery.DatabaseService.String(),
+		Name: serviceName.String(),
 	}
 	s.Start(service.WithGrpc(grpcInfo))
 }

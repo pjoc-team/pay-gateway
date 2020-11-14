@@ -9,6 +9,7 @@ require (
 	github.com/coreos/etcd v3.3.15+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.4 // indirect
 	github.com/fatih/structs v1.1.0
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.3.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.0
@@ -32,6 +33,7 @@ require (
 	github.com/pjoc-team/tracing v0.0.0-20201031090328-73d0bfa216ac
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/common v0.10.0
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.3
@@ -54,6 +56,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/grpc v1.32.0
+	google.golang.org/protobuf v1.25.0
 	gopkg.in/go-playground/assert.v1 v1.2.1
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	gopkg.in/yaml.v2 v2.2.7

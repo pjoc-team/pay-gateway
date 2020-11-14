@@ -23,12 +23,12 @@ func init() {
 
 // CheckSignValidator validator of sign
 type CheckSignValidator struct {
-	paramsCompacter ParamsCompacter
+	ParamsCompacter ParamsCompacter
 }
 
 // Validate implements validator
 func (validator *CheckSignValidator) Validate(ctx context.Context, request pay.PayRequest, cfg validator.GetMerchantConfigFunc) (e error) {
-	paramsString := validator.paramsCompacter.ParamsToString(request)
+	paramsString := validator.ParamsCompacter.ParamsToString(request)
 	log := logger.ContextLog(ctx)
 	if log.IsDebugEnabled() {
 		log.Debugf("Build interface: %v to string: %v", request, paramsString)
@@ -39,7 +39,7 @@ func (validator *CheckSignValidator) Validate(ctx context.Context, request pay.P
 		log.Errorf("couldn't found config of appID: %v request: %v", request.AppId, request)
 		return e
 	}
-	e = CheckSign(ctx, request.GetCharset(), paramsString, request.GetSign(), config, request.SignType)
+	e = CheckSign(ctx, request.GetCharset(), paramsString, request.GetSign(), config, Type(request.SignType))
 
 	return
 }
@@ -47,7 +47,7 @@ func (validator *CheckSignValidator) Validate(ctx context.Context, request pay.P
 // NewCheckSignValidator new
 func NewCheckSignValidator() *CheckSignValidator {
 	v := &CheckSignValidator{}
-	v.paramsCompacter = NewParamsCompacter(&pay.PayRequest{}, "json", []string{"sign"}, true, "&", "=")
+	v.ParamsCompacter = NewParamsCompacter(&pay.PayRequest{}, "json", []string{"sign"}, true, "&", "=")
 	return v
 }
 
@@ -57,20 +57,20 @@ type CheckSignInterface interface {
 	sign(ctx context.Context, source []byte, key string) (string, error)
 	getCheckSignKey(ctx context.Context, config *configclient.MerchantConfig) string
 	getSignKey(ctx context.Context, config *configclient.MerchantConfig) string
-	signType() string
+	signType() Type
 }
 
-var checkSignMap = make(map[string]CheckSignInterface)
+var checkSignMap = make(map[Type]CheckSignInterface)
 
 func initCheckSignMap() {
 	checkSignMap[TypeMd5] = &Md5{}
-	checkSignMap[Sha256WithRsa] = &Sha256WithRSA{}
+	checkSignMap[TypeSha256WithRSA] = &Sha256WithRSA{}
 }
 
 // CheckSign check sign
-func CheckSign(ctx context.Context, charset string, source string, signMsg string, config *configclient.MerchantConfig, signType string) (err error) {
+func CheckSign(ctx context.Context, charset string, source string, signMsg string, config *configclient.MerchantConfig, signType Type) (err error) {
 	if signType == "" {
-		signType = Sha256WithRsa
+		signType = TypeSha256WithRSA
 	}
 	log := logger.ContextLog(ctx)
 	signFunc := checkSignMap[signType]
@@ -96,7 +96,7 @@ func CheckSign(ctx context.Context, charset string, source string, signMsg strin
 }
 
 // GenerateSign generate sign
-func GenerateSign(ctx context.Context, charset string, source string, config *configclient.MerchantConfig, signType string) (sign string, err error) {
+func GenerateSign(ctx context.Context, charset string, source string, config *configclient.MerchantConfig, signType Type) (sign string, err error) {
 	log := logger.ContextLog(ctx)
 	signFunc := checkSignMap[signType]
 	var sourceBytes []byte
@@ -158,7 +158,7 @@ func (m *Md5) checkSign(ctx context.Context, source []byte, signMsg string, key 
 	return nil
 }
 
-func (*Md5) signType() string {
+func (*Md5) signType() Type {
 	return TypeMd5
 }
 
@@ -203,6 +203,6 @@ func (*Sha256WithRSA) checkSign(ctx context.Context, source []byte, signMsg stri
 	return err
 }
 
-func (*Sha256WithRSA) signType() string {
-	return Sha256WithRsa
+func (*Sha256WithRSA) signType() Type {
+	return TypeSha256WithRSA
 }

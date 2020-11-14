@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -107,6 +108,11 @@ func WithGrpc(info *GrpcInfo) Option {
 // }
 
 func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
+	err2 := logger.MinReportCallerLevel(logger.DebugLevel)
+	if err2 != nil {
+		log.Fatalf(err2.Error())
+	}
+
 	o := &options{
 		name:  name,
 		infos: infos,
@@ -137,7 +143,7 @@ func (s *Server) GetServices() *discovery.Services {
 }
 
 func (s *Server) initServices() (*discovery.Services, error) {
-	store, err := discovery.NewFileStore(s.o.store)
+	store, err := discovery.NewFileStore(s.Ctx, s.o.store)
 	if err != nil {
 		logger.Log().Errorf(
 			"failed to init file store of file: %v, error: %v", s.o.store, err.Error(),

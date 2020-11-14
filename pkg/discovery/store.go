@@ -1,12 +1,15 @@
 package discovery
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	etcdfileutil "github.com/coreos/etcd/pkg/fileutil"
+	"github.com/fsnotify/fsnotify"
 	"github.com/pjoc-team/tracing/logger"
 	"io/ioutil"
 	"os"
+	"sync"
 )
 
 // Store storage for Services
@@ -19,14 +22,16 @@ type Store interface {
 
 // fileStore use file storage to implements the store interface
 type fileStore struct {
+	locker       sync.RWMutex
 	filePath     string
 	lockFilePath string
 	file         *os.File
 	lockedFile   *etcdfileutil.LockedFile
+	services     map[string]*Service
 }
 
 // NewFileStore create file store
-func NewFileStore(filePath string) (Store, error) {
+func NewFileStore(ctx context.Context, filePath string) (Store, error) {
 	log := logger.Log()
 
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, etcdfileutil.PrivateFileMode)
@@ -42,14 +47,70 @@ func NewFileStore(filePath string) (Store, error) {
 	}()
 	lockFilePath := fmt.Sprintf("%s.lock", filePath)
 
-
 	fs := &fileStore{
 		filePath:     filePath,
 		lockFilePath: lockFilePath,
 		file:         file,
 	}
+	services, err := fs.readAll()
+	fs.services = services
+
+	fs.watch(ctx)
 
 	return fs, nil
+}
+
+func (f *fileStore) watch(ctx context.Context) {
+	log := logger.Log()
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				log.Warnf("interrupt.")
+				return
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				log.Infof("event:", event)
+				f.processFileEvent(ctx, event)
+
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Infof("error:", err)
+			}
+		}
+	}()
+
+	err = watcher.Add(f.filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (f *fileStore) processFileEvent(ctx context.Context, event fsnotify.Event) {
+	log := logger.ContextLog(ctx)
+	if event.Op&fsnotify.Write != fsnotify.Write {
+		return
+	}
+	f.locker.Lock()
+	defer f.locker.Unlock()
+
+	log.Infof("modified file:", event.Name)
+	all, err2 := f.readAll()
+	if err2 != nil {
+		log.Errorf("failed to read, error: %v", err2.Error())
+		return
+	}
+	f.services = all
 }
 
 func (f *fileStore) lock() error {
@@ -128,11 +189,9 @@ func (f *fileStore) Put(serviceName string, service *Service) error {
 }
 
 func (f *fileStore) Get(serviceName string) (*Service, error) {
-	services, err2 := f.readAll()
-	if err2 != nil {
-		return nil, err2
-	}
-	return services[serviceName], nil
+	f.locker.RLock()
+	defer f.locker.RUnlock()
+	return f.services[serviceName], nil
 }
 
 func (f *fileStore) readAll() (map[string]*Service, error) {

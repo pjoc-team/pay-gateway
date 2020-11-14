@@ -107,7 +107,7 @@ func (svc *PayGatewayService) Pay(
 			log.Errorf("failed to update pay order: %#v error: %v", order, err.Error())
 		}
 		return BuildSystemErrorResponse(err), nil
-	} else if channelPayResponse == nil || channelPayResponse.Data == nil {
+	} else if channelPayResponse == nil {
 		err = fmt.Errorf("channel response fail! response: %v", channelPayResponse)
 		log.Errorf(err.Error())
 		return BuildSystemErrorResponse(err), nil
@@ -144,6 +144,7 @@ func (svc *PayGatewayService) processChannelIDIfNotPresent(
 		err = fmt.Errorf(
 			"failed to get config of appID: %v method: %v", request.AppId, request.Method.String(),
 		)
+		log.Error(err.Error())
 		return
 	}
 

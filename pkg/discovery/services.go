@@ -6,6 +6,7 @@ import (
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracinggrpc"
+	"github.com/prometheus/common/log"
 	"google.golang.org/grpc"
 	"net/url"
 )
@@ -24,6 +25,7 @@ func (s ServiceName) String() string {
 	return string(s)
 }
 
+// Services defined services
 type Services struct {
 	Discovery *Discovery
 }
@@ -87,10 +89,21 @@ func (s *Services) initGrpc(
 		return nil, err
 	}
 
+	d, err := DialTarget(ctx, target)
+
+	if err != nil {
+		return nil, err
+	}
+	client := grpcFunc(d)
+	return client, err
+}
+
+// DialTarget dial grpc target
+func DialTarget(ctx context.Context, target string) (*grpc.ClientConn, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		log.Errorf(
-			"failed to build target: %v of service: %v error: %v", target, serviceName, err.Error(),
+			"failed to build target: %v, error: %v", target, err.Error(),
 		)
 		return nil, err
 	}
@@ -99,15 +112,5 @@ func (s *Services) initGrpc(
 			tracinggrpc.TracingClientInterceptor(),
 		),
 	)
-
-	// d, err := grpc.DialContext(
-	// 	ctx, target, grpc.WithChainUnaryInterceptor(
-	// 		tracinggrpc.TracingClientInterceptor(),
-	// 	),
-	// )
-	if err != nil {
-		return nil, err
-	}
-	client := grpcFunc(d)
-	return client, err
+	return d, err
 }

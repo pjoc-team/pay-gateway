@@ -1,13 +1,14 @@
 package discovery
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
 )
 
 func TestFileStore_Put(t *testing.T) {
-	store, err := NewFileStore("./test.data")
+	store, err := NewFileStore(context.Background(), "./test.data")
 	if err != nil {
 		t.Fatal(err.Error())
 	}

@@ -14,6 +14,8 @@ import (
 	"os"
 )
 
+const serviceName = discovery.PayGateway
+
 var (
 	c = &initConfig{}
 )
@@ -26,7 +28,8 @@ type initConfig struct {
 func flagSet() *pflag.FlagSet {
 	set := pflag.NewFlagSet("pay-gateway", pflag.ExitOnError)
 	set.StringVar(&c.clusterID, "cluster-id", "01", "cluster id for multiply cluster")
-	set.IntVar(&c.concurrency, "concurrency", 10000, "max concurrency order request per seconds")
+	set.IntVar(&c.concurrency, "concurrency", 1_000_000,
+		"max concurrency order request per seconds")
 	return set
 }
 
@@ -47,7 +50,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	s, err := service.NewServer(discovery.PayGateway.String())
+	s, err := service.NewServer(serviceName.String())
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -74,7 +77,7 @@ func main() {
 			err := pay.RegisterPayGatewayHandlerServer(ctx, mux, payGateway)
 			return err
 		},
-		Name: discovery.PayGateway.String(),
+		Name: serviceName.String(),
 	}
 	s.Start(service.WithGrpc(grpcInfo))
 }

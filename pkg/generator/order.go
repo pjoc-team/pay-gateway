@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/blademainer/commons/pkg/sign"
 	"github.com/blademainer/commons/pkg/util"
@@ -120,8 +121,10 @@ func (g *Generator) GenerateIndex() []byte {
 		index = -index
 		g.index = -g.index
 	}
-	wi := strconv.AppendInt([]byte{}, int64(index), 10)
-	start := g.indexWidth - len(wi) - 1
+	wi := strconv.Itoa(int(index))
+
+	// wi := strconv.AppendInt([]byte{}, int64(index), 10)
+	start := g.indexWidth - len(wi)
 	copy(rs[start:g.indexWidth], wi)
 	for i := 0; i < start; i++ {
 		rs[i] = zeroByte
@@ -131,7 +134,7 @@ func (g *Generator) GenerateIndex() []byte {
 
 // GenerateID generate id
 func (g *Generator) GenerateID() string {
-	//builder := strings.Builder{}
+
 	rs := make([]byte, g.byteLength)
 	dateStr := dateStr()
 	i := 0
@@ -147,7 +150,11 @@ func (g *Generator) GenerateID() string {
 	c += len(index)
 	copy(rs[i:c], index)
 	if g.debug {
-		fmt.Printf("date[%s] + clusterID[%s] + machineID[%s] + index[%s]\n", dateStr, g.ClusterID, g.MachineID, index)
+		fmt.Printf("date[%s] + clusterID[%s] + machineID[%s] + index[%s] + byteLen: %v + cap: %v" +
+			", hex: %v\n", dateStr,
+			g.ClusterID, g.MachineID, index, g.byteLength, c,
+			base64.RawStdEncoding.EncodeToString(rs))
+
 	}
 	return string(rs)
 }
