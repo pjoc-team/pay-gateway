@@ -2,7 +2,7 @@
 
 A pay system implements by GO.
 
-基于GO实现的支付系统。
+基于GO实现的支付系统。文档：https://pjoc.pub/
 
 [![License](https://img.shields.io/github/license/pjoc-team/pay-gateway.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Stars](https://img.shields.io/github/stars/pjoc-team/pay-gateway.svg)](https://github.com/pjoc-team/pay-gateway/stargazers)
