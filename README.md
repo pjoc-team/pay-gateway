@@ -23,8 +23,8 @@ A pay system implements by GO.
 
 ## Docs
 
-[swagger-api](https://pjoc.pub/pay-proto)
-[docs](https://pjoc.pub/)
+- [swagger-api](https://pjoc.pub/pay-proto)
+- [docs](https://pjoc.pub/)
 
 
 ## Technology
