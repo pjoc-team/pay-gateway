@@ -53,6 +53,10 @@ func NewFileStore(ctx context.Context, filePath string) (Store, error) {
 		file:         file,
 	}
 	services, err := fs.readAll()
+	if err != nil {
+		log.Errorf("failed to read file, error: %v", err.Error())
+		return nil, err
+	}
 	fs.services = services
 
 	fs.watch(ctx)

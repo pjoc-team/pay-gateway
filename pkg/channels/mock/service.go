@@ -20,6 +20,7 @@ type ChannelConfig struct {
 	PrivateKey string `json:"private_key" yaml:"privateKey" validate:"required"`
 }
 
+// NewServer create mock channel server
 func NewServer(cs config.Server) (pb.PayChannelServer, error) {
 	g := generator.New("1", 1_000_000)
 

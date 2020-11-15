@@ -3,6 +3,7 @@ package discovery
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/common/log"
 	"sync"
 	"testing"
 )
@@ -24,7 +25,7 @@ func TestFileStore_Put(t *testing.T) {
 			}
 			err = store.Put(s.ServiceName, s)
 			if err != nil {
-				t.Fatal(err.Error())
+				log.Error(err.Error())
 			}
 		}(i)
 	}

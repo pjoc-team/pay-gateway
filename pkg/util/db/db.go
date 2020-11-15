@@ -42,7 +42,7 @@ func GetHost(url string) string {
 	if url == "" {
 		return ""
 	}
-	regex := regexp.MustCompile("\\(.*?\\)")
+	regex := regexp.MustCompile(`\(.*?\)`)
 	findString := regex.FindString(url)
 	findString = strings.TrimPrefix(findString, "(")
 	findString = strings.TrimSuffix(findString, ")")

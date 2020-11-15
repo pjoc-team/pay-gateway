@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 )
 
-// Type
+// Type sign type
 type Type string
 
 const (

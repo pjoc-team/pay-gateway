@@ -60,6 +60,9 @@ func main() {
 	}
 
 	server, err := mock.NewServer(cs)
+	if err != nil {
+		log.Fatalf("failed init server, error: %v", err.Error())
+	}
 	grpcInfo := &service.GrpcInfo{
 		RegisterGrpcFunc: func(ctx context.Context, gs *grpc.Server) error {
 			pay.RegisterPayChannelServer(gs, server)
