@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-name="mysql"
+export name="mysql"
 
-[[ "$(docker ps -a -f name="${name}" | grep ${name} | awk '{print $NF}')" -eq ${name} ]] && echo "${name} is running!" && exit 0
+[ -n "$(docker ps -a -f name=${name} | grep ${name} | awk '{print $NF}' | grep -w ${name})" ] && echo "${name} is running!" && exit 0
 
 cur_script_dir="$(cd $(dirname "$0") && pwd)"
 WORK_HOME="${cur_script_dir}/.."
