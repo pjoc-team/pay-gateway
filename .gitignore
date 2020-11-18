@@ -1,3 +1,6 @@
+*.prof
+*.svg
+*.out
 /mysql
 bin
 ### macOS template
@@ -220,4 +223,4 @@ logs
 vendor
 go.sum
 test.data
-conf/discovery.json
+conf/discovery.json*.prof.svg
