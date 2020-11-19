@@ -22,13 +22,12 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
-	"net/http/pprof"
 	"os"
 	"os/signal"
+	runtimepprof "runtime/pprof"
 	"strings"
 	"syscall"
 	"time"
@@ -75,6 +74,7 @@ type options struct {
 	shutdownFunctions []ShutdownFunction
 	flagSet           []*pflag.FlagSet
 	store             string
+	enablePprof       bool
 }
 
 func (o *options) apply(options ...Option) {
@@ -108,6 +108,7 @@ func WithGrpc(info *GrpcInfo) Option {
 // }
 
 func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
+	log := logger.Log()
 	err2 := logger.MinReportCallerLevel(logger.DebugLevel)
 	if err2 != nil {
 		log.Fatalf(err2.Error())
@@ -171,6 +172,10 @@ func (s *Server) flags() *pflag.FlagSet {
 	flagSet.StringVar(&s.o.network, "network", "tcp", "network ")
 	flagSet.StringVar(&s.o.logLevel, "log-level", "debug", "log level")
 	flagSet.StringVar(&s.o.store, "store", "./conf/discovery.json", "file to store services")
+	flagSet.BoolVar(
+		&s.o.enablePprof, "enable-pprof", true,
+		"turn on pprof debug tools",
+	)
 	for _, p := range s.o.flagSet {
 		flagSet.AddFlagSet(p)
 	}
@@ -254,6 +259,33 @@ func (s *Server) run() {
 	if err2 != nil {
 		log.Errorf("failed to init grpc, error: %v", err2.Error())
 		log.Fatal(err2.Error())
+	}
+
+	if s.o.enablePprof {
+		pprofFile := fmt.Sprintf("%s-cpu.prof", s.o.name)
+		f, err := os.Create(pprofFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// runtime.SetCPUProfileRate(10)
+		log.Infof("starting cpu profile to file: %v", pprofFile)
+		err = runtimepprof.StartCPUProfile(f)
+		if err != nil {
+			log.Errorf("failed to start cpu profile, error: %v", err.Error())
+		}
+		s.shutdownFunctions = append(
+			s.shutdownFunctions, func(ctx context.Context) {
+				runtimepprof.StopCPUProfile()
+				log.Warn("cpu profile is stopped")
+			},
+		)
+		go func() {
+			log.Warn("listening :61616 for pprof")
+			err3 := http.ListenAndServe(":61616", nil)
+			if err3 != nil {
+				log.Error("failed to listen pprof, error: %v", err3.Error())
+			}
+		}()
 	}
 
 	// signal
@@ -463,9 +495,9 @@ func (s *Server) initGrpc() error {
 			h := healthInterceptor(healthServer)
 			internalHTTPMux.Handle("/health", h)
 			// pprof
-			if log.IsDebugEnabled() {
-				internalHTTPMux.HandleFunc("/debug/pprof/", pprof.Index)
-			}
+			// if log.IsDebugEnabled() {
+			// 	internalHTTPMux.HandleFunc("/debug/pprof/", pprof.Index)
+			// }
 
 			httpServer := &http.Server{
 				Addr:         fmt.Sprintf(":%d", s.o.listenInternal),
