@@ -27,7 +27,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	runtimepprof "runtime/pprof"
 	"strings"
 	"syscall"
 	"time"
@@ -48,6 +47,8 @@ const (
 	DefaultInternalHttpPort = 8081
 	// DefaultGRPCPort default grpc port
 	DefaultGRPCPort = 9090
+	// DefaultPPROFPort default pprof port
+	DefaultPPROFPort = 61616
 )
 
 // Server defined server
@@ -66,6 +67,7 @@ type options struct {
 	listen         int
 	listenHTTP     int
 	listenInternal int
+	listenPPROF    int
 	network        string
 	logLevel       string
 
@@ -169,6 +171,10 @@ func (s *Server) flags() *pflag.FlagSet {
 		&s.o.listenInternal, "listen-internal", DefaultInternalHttpPort,
 		"listen of the internal http service",
 	)
+	flagSet.IntVar(
+		&s.o.listenPPROF, "listen-pprof", DefaultPPROFPort,
+		"listen of the pprof http service",
+	)
 	flagSet.StringVar(&s.o.network, "network", "tcp", "network ")
 	flagSet.StringVar(&s.o.logLevel, "log-level", "debug", "log level")
 	flagSet.StringVar(&s.o.store, "store", "./conf/discovery.json", "file to store services")
@@ -240,6 +246,37 @@ func (s *Server) runFunc(flagSet *pflag.FlagSet) func(cmd *cobra.Command, args [
 	}
 }
 
+func (s Server) initDebug() {
+	log := logger.Log()
+
+	if s.o.enablePprof {
+		// pprofFile := fmt.Sprintf("%s-cpu.prof", s.o.name)
+		// f, err := os.Create(pprofFile)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+		// // runtime.SetCPUProfileRate(10)
+		// log.Infof("starting cpu profile to file: %v", pprofFile)
+		// err = runtimepprof.StartCPUProfile(f)
+		// if err != nil {
+		// 	log.Errorf("failed to start cpu profile, error: %v", err.Error())
+		// }
+		// s.shutdownFunctions = append(
+		// 	s.shutdownFunctions, func(ctx context.Context) {
+		// 		runtimepprof.StopCPUProfile()
+		// 		log.Warn("cpu profile is stopped")
+		// 	},
+		// )
+		go func() {
+			log.Warn("listening :61616 for pprof")
+			err3 := http.ListenAndServe(":61616", nil)
+			if err3 != nil {
+				log.Error("failed to listen pprof, error: %v", err3.Error())
+			}
+		}()
+	}
+}
+
 func (s *Server) run() {
 	log := logger.Log()
 	if len(s.o.infos) == 0 {
@@ -261,32 +298,7 @@ func (s *Server) run() {
 		log.Fatal(err2.Error())
 	}
 
-	if s.o.enablePprof {
-		pprofFile := fmt.Sprintf("%s-cpu.prof", s.o.name)
-		f, err := os.Create(pprofFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		// runtime.SetCPUProfileRate(10)
-		log.Infof("starting cpu profile to file: %v", pprofFile)
-		err = runtimepprof.StartCPUProfile(f)
-		if err != nil {
-			log.Errorf("failed to start cpu profile, error: %v", err.Error())
-		}
-		s.shutdownFunctions = append(
-			s.shutdownFunctions, func(ctx context.Context) {
-				runtimepprof.StopCPUProfile()
-				log.Warn("cpu profile is stopped")
-			},
-		)
-		go func() {
-			log.Warn("listening :61616 for pprof")
-			err3 := http.ListenAndServe(":61616", nil)
-			if err3 != nil {
-				log.Error("failed to listen pprof, error: %v", err3.Error())
-			}
-		}()
-	}
+	s.initDebug()
 
 	// signal
 	interrupt := make(chan os.Signal, 1)
