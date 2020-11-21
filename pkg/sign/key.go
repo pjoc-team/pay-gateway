@@ -5,10 +5,12 @@ import (
 	"strings"
 )
 
+// ParsePublicKey parse public key to pem
 func ParsePublicKey(raw string) (result []byte) {
 	return parseKey(raw, "-----BEGIN PUBLIC KEY-----", "-----END PUBLIC KEY-----")
 }
 
+// ParsePrivateKey parse private key to pem
 func ParsePrivateKey(raw string) (result []byte) {
 	return parseKey(raw, "-----BEGIN RSA PRIVATE KEY-----", "-----END RSA PRIVATE KEY-----")
 }

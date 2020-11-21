@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// ParamsCompacter compacter fields to form
 type ParamsCompacter struct {
 	IgnoreKeys                  []string
 	IgnoreEmptyValue            bool
@@ -19,6 +20,7 @@ type ParamsCompacter struct {
 	fieldTagNameAndFieldNameMap map[string]string
 }
 
+// NewParamsCompacter new
 func NewParamsCompacter(entityDemoInstance interface{}, fieldTag string, ignoreKeys []string, ignoreEmptyValue bool, pairsDelimiter string, keyValueDelimiter string) ParamsCompacter {
 	log := logger.Log()
 	if fieldTag == "" {
@@ -60,10 +62,11 @@ l:
 	return p
 }
 
+// ParamsToString convert to string
 func (p ParamsCompacter) ParamsToString(instance interface{}) string {
 	defer func() {
 		if message := recover(); message != nil {
-			fmt.Println(message)
+			logger.Log().Errorf("failed to convert instance: %#v to form, error: %v", instance, message)
 		}
 	}()
 	params := make(map[string]string)
@@ -79,6 +82,7 @@ func (p ParamsCompacter) ParamsToString(instance interface{}) string {
 	return p.BuildMapToString(params)
 }
 
+// BuildMapToString build map to string
 func (p ParamsCompacter) BuildMapToString(params map[string]string) string {
 	builder := strings.Builder{}
 	delimiter := ""

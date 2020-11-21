@@ -21,6 +21,7 @@ func (o *Options) apply(options ...Option) {
 	}
 }
 
+// Option func for apply options
 type Option func(*Options)
 
 // TestDemoURL 测试url
@@ -39,7 +40,7 @@ func WithDemoURL(demoURL string) Option {
 
 // Config 配置，由URL反解析而来
 type Config struct {
-	BackendUrl  *url.URL
+	BackendURL  *url.URL
 	BackendType string
 	Path        string
 	Args        map[string][]string
@@ -106,7 +107,7 @@ func ParseConfig(urlStr string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.BackendUrl = u
+	c.BackendURL = u
 	c.BackendType = u.Scheme
 	c.Host = u.Host
 	c.Path = u.Path

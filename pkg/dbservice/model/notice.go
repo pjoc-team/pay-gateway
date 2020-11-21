@@ -1,7 +1,8 @@
 package model
 
+// Notice notice model
 type Notice struct {
-	GatewayOrderId string `gorm:"primary_key"`
+	GatewayOrderID string `gorm:"primary_key"`
 	CreateDate     string `gorm:"index"`
 	FailTimes      uint32
 	NoticeTime     string `gorm:"index"`
@@ -10,17 +11,20 @@ type Notice struct {
 	NextNotifyTime string `gorm:"index"`
 }
 
+// TableName table name of notice
 func (Notice) TableName() string{
 	return "pay_notice"
 }
 
+// NoticeOk notice ok model
 type NoticeOk struct {
-	GatewayOrderId string `gorm:"primary_key"`
+	GatewayOrderID string `gorm:"primary_key"`
 	CreateDate     string `gorm:"index"`
 	FailTimes      uint32
 	NoticeTime     string `gorm:"index"`
 }
 
+// TableName table name of NoticeOk model
 func (NoticeOk) TableName() string{
 	return "pay_notice_ok"
 }

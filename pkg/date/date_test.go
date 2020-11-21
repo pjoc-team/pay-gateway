@@ -2,20 +2,19 @@ package date
 
 import (
 	"fmt"
-	"github.com/coreos/etcd/pkg/testutil"
+	"gopkg.in/go-playground/assert.v1"
 	"testing"
 	"time"
 )
 
 func TestNowDate(t *testing.T) {
 	fmt.Println(NowDate())
-	testutil.AssertEqual(t, 10, len(NowDate()))
+	assert.Equal(t, 10, len(NowDate()))
 }
 
 func TestNowTime(t *testing.T) {
 	fmt.Println(NowTime())
-	testutil.AssertEqual(t, 19, len(NowTime()))
-
+	assert.Equal(t, 29, len(NowTime()))
 }
 
 func TestTomorrow(t *testing.T) {

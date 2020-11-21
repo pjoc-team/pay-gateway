@@ -8,9 +8,14 @@ import (
 	"io/ioutil"
 )
 
+// Type sign type
+type Type string
+
 const (
-	SIGN_TYPE_MD5             = "MD5"
-	SIGN_TYPE_SHA256_WITH_RSA = "RSA"
+	// TypeMd5 md5 sign
+	TypeMd5 Type = "MD5"
+	// TypeSha256WithRSA ras sign
+	TypeSha256WithRSA Type = "RSA"
 )
 
 func init() {
@@ -26,19 +31,20 @@ func initEncodingMap() {
 
 func stringToBytes(str string, charset string) ([]byte, error) {
 	bts := []byte(str)
-	if enc, exists := encodingMap[charset]; !exists {
+	enc, exists := encodingMap[charset]
+	if !exists {
 		// Default utf-8
 		return bts, nil
-	} else {
-		reader := transform.NewReader(bytes.NewReader(bts), enc.NewEncoder())
-		d, e := ioutil.ReadAll(reader)
-		if e != nil {
-			return bts, nil
-		}
-		return d, nil
 	}
+	reader := transform.NewReader(bytes.NewReader(bts), enc.NewEncoder())
+	d, e := ioutil.ReadAll(reader)
+	if e != nil {
+		return bts, nil
+	}
+	return d, nil
 }
 
+// GbkToUtf8 convert gbk to utf8
 func GbkToUtf8(s []byte) ([]byte, error) {
 	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewDecoder())
 	d, e := ioutil.ReadAll(reader)
@@ -48,6 +54,7 @@ func GbkToUtf8(s []byte) ([]byte, error) {
 	return d, nil
 }
 
+// Utf8ToGbk convert utf8 to gbk
 func Utf8ToGbk(s []byte) ([]byte, error) {
 	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewEncoder())
 	d, e := ioutil.ReadAll(reader)

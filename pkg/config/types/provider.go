@@ -6,8 +6,10 @@ var (
 	backends = make(map[Provider]*InitOpts)
 )
 
+// Provider backend provider
 type Provider string
 
+// InitOpts init options
 type InitOpts struct {
 	InitFunc InitFunc
 	Options  *Options

@@ -4,7 +4,7 @@ on:
   push:
     # Publish `master` as Docker `latest` image.
     branches:
-      - master
+      - "*"
 
     # Publish `v1.2.3` tags as releases.
     tags:
@@ -18,7 +18,7 @@ env:
   IMAGE_NAME: pay-gateway
 
 jobs:
-  # Run tests.
+  # Run build.
   # See also https://docs.docker.com/docker-hub/builds/automated-testing/
   test:
     runs-on: ubuntu-latest
@@ -29,6 +29,8 @@ jobs:
 #        with:
 #          name: bin
 
+      - uses: creekorful/goreportcard-action@v1.0
+
       - uses: actions/checkout@v2
 #      - uses: actions/cache@v1
 #        with:
@@ -37,7 +39,7 @@ jobs:
 #          restore-keys: |
 #            ${{ runner.os }}-go-
 
-      - name: Run tests
+      - name: Run build
         run: |
           if [ -f docker-compose.test.yml ]; then
             docker-compose --file docker-compose.test.yml build

@@ -82,7 +82,10 @@ func Test_fileBackend_GetConfig(t *testing.T) {
 		Name string `yaml:"name"`
 		Age  int    `yaml:"age"`
 	}
-	backend.Start()
+	err = backend.Start()
+	if err != nil{
+		t.Fatal(err.Error())
+	}
 
 	np := &p{}
 	err = backend.UnmarshalGetConfig(context.Background(), np, "appID1", "mchID1")

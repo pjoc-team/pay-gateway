@@ -1,10 +1,10 @@
 package constant
 
-// 支付成功
-const ORDER_STATUS_SUCCESS = "SUCCESS"
+// OrderStatusSuccess 支付成功
+const OrderStatusSuccess = "SUCCESS"
 
-// 支付失败
-const ORDER_STATUS_FAILED = "FAILED"
+// OrderStatusFailed 支付失败
+const OrderStatusFailed = "FAILED"
 
-// 支付中
-const ORDER_STATUS_WAITING = "WAITING"
+// OrderStatusWaiting 支付中
+const OrderStatusWaiting = "WAITING"

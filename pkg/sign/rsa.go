@@ -54,6 +54,7 @@ func packageData(originalData []byte, packageSize int) (r [][]byte) {
 	return r
 }
 
+// RSAEncrypt encrypt by ras
 func RSAEncrypt(plaintext, key []byte) ([]byte, error) {
 	var err error
 	var block *pem.Block
@@ -70,7 +71,7 @@ func RSAEncrypt(plaintext, key []byte) ([]byte, error) {
 	var pub = pubInterface.(*rsa.PublicKey)
 
 	var data = packageData(plaintext, pub.N.BitLen()/8-11)
-	var cipherData []byte = make([]byte, 0, 0)
+	var cipherData = make([]byte, 0)
 
 	for _, d := range data {
 		var c, e = rsa.EncryptPKCS1v15(rand.Reader, pub, d)
@@ -83,6 +84,7 @@ func RSAEncrypt(plaintext, key []byte) ([]byte, error) {
 	return cipherData, nil
 }
 
+// RSADecrypt decrypt by rsa
 func RSADecrypt(ciphertext, key []byte) ([]byte, error) {
 	var err error
 	var block *pem.Block
@@ -98,7 +100,7 @@ func RSADecrypt(ciphertext, key []byte) ([]byte, error) {
 	}
 
 	var data = packageData(ciphertext, pri.PublicKey.N.BitLen()/8)
-	var plainData []byte = make([]byte, 0, 0)
+	var plainData = make([]byte, 0)
 
 	for _, d := range data {
 		var p, e = rsa.DecryptPKCS1v15(rand.Reader, pri, d)

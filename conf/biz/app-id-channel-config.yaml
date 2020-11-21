@@ -1,0 +1,18 @@
+"1":
+  WEB:
+    - "available": true
+      "channelAccount": "test"
+      "channelId": "mock"
+      "method": "WEB"
+      "ratePercent": 0.6
+  QR_CODE:
+    - "available": true
+      "channelAccount": "test"
+      "channelId": "mock"
+      "method": "WEB"
+      "ratePercent": 0.6
+    - "available": true
+      "channelAccount": "1"
+      "channelId": "personal"
+      "method": "WEB"
+      "ratePercent": 0.6

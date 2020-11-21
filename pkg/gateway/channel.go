@@ -9,6 +9,7 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 )
 
+// GenerateChannelPayRequest generate pay request
 func (svc *PayGatewayService) GenerateChannelPayRequest(ctx context.Context, requestContext *RequestContext) (channelPayRequest *pay.ChannelPayRequest, err error) {
 	log := logger.ContextLog(ctx)
 	request := requestContext.PayRequest
@@ -17,17 +18,16 @@ func (svc *PayGatewayService) GenerateChannelPayRequest(ctx context.Context, req
 		log.Errorf("Failed to copy struct from %v! error: %s", request, err.Error())
 		return
 	}
-	channelPayRequest.GatewayOrderId = requestContext.GatewayOrderId
+	channelPayRequest.GatewayOrderId = requestContext.GatewayOrderID
 
-	if svc.payConfig.NotifyUrlPattern == "" {
-		log.Errorf("NotifyUrlPattern is null!!!")
-	}
-	if svc.payConfig.ReturnUrlPattern == "" {
-		log.Errorf("ReturnUrlPattern is null!!!")
+	payConfig, err := svc.configClients.GetPayConfig(ctx)
+	if err != nil{
+		log.Errorf("failed to pay config, error: %v", err.Error())
+		return nil, err
 	}
 	// reset notify url
-	channelPayRequest.NotifyUrl = ReplaceGatewayOrderId(svc.payConfig.NotifyUrlPattern, channelPayRequest.GatewayOrderId)
-	channelPayRequest.ReturnUrl = ReplaceGatewayOrderId(svc.payConfig.ReturnUrlPattern, channelPayRequest.GatewayOrderId)
+	channelPayRequest.NotifyUrl = ReplaceGatewayOrderID(payConfig.NotifyURLPattern, channelPayRequest.GatewayOrderId)
+	channelPayRequest.ReturnUrl = ReplaceGatewayOrderID(payConfig.ReturnURLPattern, channelPayRequest.GatewayOrderId)
 	channelPayRequest.ChannelAccount = requestContext.ChannelAccount
 	channelPayRequest.PayAmount = request.GetPayAmount()
 	product := &pay.Product{}
@@ -37,15 +37,14 @@ func (svc *PayGatewayService) GenerateChannelPayRequest(ctx context.Context, req
 	channelPayRequest.Product = product
 	channelPayRequest.UserIp = request.GetUserIp()
 	channelPayRequest.Method = request.GetMethod()
-	if extJson := request.ExtJson; extJson != "" {
+	if extJSON := request.ExtJson; extJSON != "" {
 		meta := make(map[string]string)
-		if err = json.Unmarshal([]byte(extJson), &meta); err != nil {
-			err = fmt.Errorf("failed to unmarshal json: %v error: %s", extJson, err.Error())
+		if err = json.Unmarshal([]byte(extJSON), &meta); err != nil {
+			err = fmt.Errorf("failed to unmarshal json: %v error: %s", extJSON, err.Error())
 			log.Errorf(err.Error())
 			return
-		} else {
-			channelPayRequest.Meta = meta
 		}
+		channelPayRequest.Meta = meta
 	}
 	return
 }

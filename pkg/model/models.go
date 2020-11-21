@@ -1,96 +1,57 @@
 package model
 
+import "github.com/pjoc-team/pay-gateway/pkg/configclient"
+
+// ConfigType config type
 type ConfigType string
 
+// GatewayConfig gateway config
 type GatewayConfig struct {
 	// 集群配置
-	PayConfig *PayConfig
+	PayConfig *configclient.PayConfig
 	// 通知配置
-	NoticeConfig *NoticeConfig
-	// AppId和费率配置
-	AppIdAndChannelConfigMap *AppIdAndChannelConfigMap
-	// AppId和商户配置
-	AppIdAndMerchantMap *MerchantConfigMap
+	NoticeConfig *configclient.NoticeConfig
+	// AppID和费率配置
+	AppIDAndChannelConfigMap *AppIDAndChannelConfigMap
+	// AppID和商户配置
+	AppIDAndMerchantMap *MerchantConfigMap
 	// 服务和对应的部署服务名映射
 	ServiceMap *ServiceConfigMap
 	// Channel和对应host配置
 	ChannelServiceMap *ChannelServiceConfigMap
 }
 
+// FullPath full path of config
 func (b *BaseConfig) FullPath() string {
 	return b.baseDir + b.dirName
 }
 
+// Key key of config
 func (b *BaseConfig) Key() string {
 	return b.key
 }
 
+// BaseDir base dir of config
 func (b *BaseConfig) BaseDir() string {
 	return b.baseDir
 }
 
+// BaseConfig base config
 type BaseConfig struct {
-	key      string `json:"-"`
-	baseDir  string `json:"-"`
-	dirName  string `json:"-"`
-	fullPath string `json:"-"`
+	key      string
+	baseDir  string
+	dirName  string
 }
 
-type PayConfig struct {
-	ClusterId        string `json:"cluster_id"`
-	Concurrency      int    `json:"concurrency"`
-	NotifyUrlPattern string `json:"notify_url_pattern"` // 通知地址的正则，必须包含{gateway_order_id}
-	ReturnUrlPattern string `json:"return_url_pattern"` // 跳转地址的正则，必须包含{gateway_order_id}
-}
+// ServiceConfigMap services
+type ServiceConfigMap map[string]configclient.ServiceConfig
 
-// ################## notice ##################
-type NoticeConfig struct {
-	NoticeIntervalSecond int `json:"notice_interval_second"`
-	// 通知间隔
-	//
-	// 例如: [30, 30, 120, 240, 480, 1200, 3600, 7200, 43200, 86400, 172800]
-	// 表示如果通知失败，则会隔 30s, 30s, 2min, 4min, 8min, 20min, 1H, 2H, 12H, 24H, 48H 通知
-	NoticeDelaySecondExpressions []int `json:"notice_expressions"`
-}
+// ChannelServiceConfigMap channel services
+type ChannelServiceConfigMap map[string]configclient.ChannelServiceConfig
 
-// ################## service ##################
-type ServiceConfigMap map[string]ServiceConfig
-type ServiceConfig struct {
-	ServiceName string `json:"service_name"`
-	Host        string `json:"host"`
-	Port        int    `json:"port"`
-}
 
-// ################## channel ##################
-type ChannelServiceConfigMap map[string]ChannelServiceConfig
+// MerchantConfigMap merchant config
+type MerchantConfigMap map[string]configclient.MerchantConfig
 
-type ChannelServiceConfig struct {
-	BaseConfig
-	ChannelId   string `json:"channel_id"`
-	ServiceName string `json:"service_name"`
-	Host        string `json:"host"`
-	Port        int    `json:"port"`
-}
-
-// ################## merchant ##################
-
-type MerchantConfigMap map[string]MerchantConfig
-
-type MerchantConfig struct {
-	AppId                string `json:"app_id"`
-	GatewayRSAPublicKey  string `json:"gateway_rsa_public_key"`
-	GatewayRSAPrivateKey string `json:"gateway_rsa_private_key"`
-	MerchantRSAPublicKey string `json:"merchant_rsa_public_key"`
-	Md5Key               string `json:"md5_key"`
-}
-
-// ################## personal merchant ##################
-type PersonalMerchantConfigMap map[string]PersonalMerchant
-
-type PersonalMerchant struct {
-	AppId                string `json:"app_id"`
-	GatewayRSAPublicKey  string `json:"gateway_rsa_public_key"`
-	GatewayRSAPrivateKey string `json:"gateway_rsa_private_key"`
-	MerchantRSAPublicKey string `json:"merchant_rsa_public_key"`
-	Md5Key               string `json:"md5_key"`
-}
+// PersonalMerchantConfigMap personal merchant config
+type PersonalMerchantConfigMap map[string]configclient.PersonalMerchant

@@ -1,0 +1,2 @@
+notifyURLPattern: "http://pay.pjoc.pub/notify/{gateway_order_id}"
+returnURLPattern: "http://pay.pjoc.pub/return/{gateway_order_id}"

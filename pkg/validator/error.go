@@ -1,4 +1,5 @@
 package validator
 
-type ValidatorError struct {
+// Error failed to validate
+type Error struct {
 }

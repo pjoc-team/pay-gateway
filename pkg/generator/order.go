@@ -1,9 +1,11 @@
 package generator
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/blademainer/commons/pkg/sign"
 	"github.com/blademainer/commons/pkg/util"
+	"github.com/pjoc-team/tracing/logger"
 	"hash/fnv"
 	"os"
 	"strconv"
@@ -11,9 +13,10 @@ import (
 	"time"
 )
 
+// Generator generate order ids
 type Generator struct {
-	ClusterId           string
-	MachineId           string
+	ClusterID           string
+	MachineID           string
 	ClusterAndMachineID string
 	Concurrency         int
 	maxIndex            int32
@@ -23,54 +26,65 @@ type Generator struct {
 	debug               bool
 }
 
-const ZeroByte = byte('0')
+// zeroByte zero byte
+const zeroByte = byte('0')
 
-func New(clusterId string, concurrency int) *Generator {
+// New create generator
+func New(clusterID string, concurrency int) *Generator {
+	if concurrency <= 0 {
+		panic("concurrency must greater than 0")
+	}
 	g := &Generator{}
-	id := fmt.Sprint(getIdentityId())
-	g.MachineId = id
-	g.ClusterId = clusterId
-	g.ClusterAndMachineID = fmt.Sprintf("%s%s", clusterId, id)
+	id := fmt.Sprint(getIdentityID())
+	g.MachineID = id
+	g.ClusterID = clusterID
+	g.ClusterAndMachineID = fmt.Sprintf("%s%s", clusterID, id)
 	g.Concurrency = concurrency
 	g.maxIndex = int32(concurrency)
 	for g.indexWidth = 0; concurrency > 0; g.indexWidth++ {
 		concurrency = concurrency / 10
 	}
 	dateStr := dateStr()
-	g.byteLength = len(dateStr) + len(g.ClusterId) + len(g.MachineId) + g.indexWidth
+	g.byteLength = len(dateStr) + len(g.ClusterID) + len(g.MachineID) + g.indexWidth
 	return g
 }
 
+// Debug debug generator
 func (g *Generator) Debug() {
 	g.debug = true
 }
 
-func getIdentityId() uint32 {
+func getIdentityID() uint32 {
 	if name, err := os.Hostname(); err == nil {
 		h := fnv.New32()
-		h.Write([]byte(name))
-		sum32 := h.Sum32()
-		return sum32
-	} else {
-		macs := util.GetMacAddrs()
-
-		mac := ""
-		if len(macs) == 0 {
-			rsaGenerator, err := sign.NewRsa2048Generator()
-			if err != nil {
-				mac = util.RandString(64)
-			} else {
-				mac, err = rsaGenerator.GeneratePemPublicKey()
-				if err != nil {
-					mac = util.RandString(64)
-				}
-			}
+		_, err := h.Write([]byte(name))
+		if err != nil {
+			panic(err.Error())
 		}
-		h := fnv.New32()
-		h.Write([]byte(mac))
 		sum32 := h.Sum32()
 		return sum32
 	}
+	macs := util.GetMacAddrs()
+
+	mac := ""
+	if len(macs) == 0 {
+		rsaGenerator, err := sign.NewRsa2048Generator()
+		if err != nil {
+			logger.Log().Errorf("failed to gen id: %v", err.Error())
+			panic(err.Error())
+		}
+		mac, err = rsaGenerator.GeneratePemPublicKey()
+		if err != nil {
+			mac = util.RandString(64)
+		}
+	}
+	h := fnv.New32()
+	_, err := h.Write([]byte(mac))
+	if err != nil {
+		panic(err.Error())
+	}
+	sum32 := h.Sum32()
+	return sum32
 }
 
 func dateStr() []byte {
@@ -99,6 +113,7 @@ func dateStr() []byte {
 	return bts
 }
 
+// GenerateIndex generator index
 func (g *Generator) GenerateIndex() []byte {
 	rs := make([]byte, g.indexWidth)
 	index := atomic.AddInt32(&g.index, 1) % g.maxIndex
@@ -106,17 +121,20 @@ func (g *Generator) GenerateIndex() []byte {
 		index = -index
 		g.index = -g.index
 	}
-	wi := strconv.AppendInt([]byte{}, int64(index), 10)
-	start := g.indexWidth - len(wi) - 1
+	wi := strconv.Itoa(int(index))
+
+	// wi := strconv.AppendInt([]byte{}, int64(index), 10)
+	start := g.indexWidth - len(wi)
 	copy(rs[start:g.indexWidth], wi)
 	for i := 0; i < start; i++ {
-		rs[i] = ZeroByte
+		rs[i] = zeroByte
 	}
 	return rs
 }
 
-func (g *Generator) GenerateId() string {
-	//builder := strings.Builder{}
+// GenerateID generate id
+func (g *Generator) GenerateID() string {
+
 	rs := make([]byte, g.byteLength)
 	dateStr := dateStr()
 	i := 0
@@ -132,7 +150,11 @@ func (g *Generator) GenerateId() string {
 	c += len(index)
 	copy(rs[i:c], index)
 	if g.debug {
-		fmt.Printf("date[%s] + clusterID[%s] + machineID[%s] + index[%s]\n", dateStr, g.ClusterId, g.MachineId, index)
+		fmt.Printf("date[%s] + clusterID[%s] + machineID[%s] + index[%s] + byteLen: %v + cap: %v" +
+			", hex: %v\n", dateStr,
+			g.ClusterID, g.MachineID, index, g.byteLength, c,
+			base64.RawStdEncoding.EncodeToString(rs))
+
 	}
 	return string(rs)
 }

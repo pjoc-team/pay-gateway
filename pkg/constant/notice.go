@@ -1,10 +1,10 @@
 package constant
 
-// 通知失败
-const NOTIFY_FAILED = "FAILED"
+// NotifyFailed 通知失败
+const NotifyFailed = "FAILED"
 
-// 通知成功
-const NOTIFY_SUCCESS = "SUCCESS"
+// NotifySuccess 通知成功
+const NotifySuccess = "SUCCESS"
 
-// 通知中
-const NOTIFY_WAITING = "WAITING"
+// NotifyWaiting 通知中
+const NotifyWaiting = "WAITING"

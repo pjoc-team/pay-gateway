@@ -1,4 +1,4 @@
-package service
+package dbservice
 
 import (
 	"github.com/jinzhu/copier"
@@ -10,19 +10,26 @@ import (
 	"golang.org/x/net/context"
 )
 
+// PayDatabaseService service of db
 type PayDatabaseService struct {
 	*gorm.DB
 }
 
-func (s *PayDatabaseService) FindPayNoticeLessThenTime(ctx context.Context, payNotice *pb.PayNotice) (response *pb.PayNoticeResponse, err error) {
+// FindPayNoticeLessThenTime find notices less then time
+func (s *PayDatabaseService) FindPayNoticeLessThenTime(
+	ctx context.Context, payNotice *pb.PayNotice,
+) (response *pb.PayNoticeResponse, err error) {
 	log := logger.ContextLog(ctx)
-	notice := &model.Notice{}
-	if err = copier.Copy(notice, payNotice); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	notice := newDbNotice(payNotice)
+	// if err = copier.Copy(notice, payNotice); err != nil {
+	//	log.Errorf("failed to copy object! error: %s", err)
+	//	return
+	// }
 	results := make([]model.Notice, 0)
-	if results := s.Where("length(next_notify_time) > 0 and next_notify_time <= ? and status != ?", notice.NextNotifyTime, constant.NOTIFY_SUCCESS).Find(&results); results.RecordNotFound() {
+	if results := s.Where(
+		"length(next_notify_time) > 0 and next_notify_time <= ? and status != ?",
+		notice.NextNotifyTime, constant.NotifySuccess,
+	).Find(&results); results.RecordNotFound() {
 		log.Errorf("find error: %v", s.Error.Error())
 		return
 	}
@@ -40,13 +47,12 @@ func (s *PayDatabaseService) FindPayNoticeLessThenTime(ctx context.Context, payN
 	return
 }
 
-func (s *PayDatabaseService) SavePayNotice(ctx context.Context, payNotice *pb.PayNotice) (result *pb.ReturnResult, err error) {
+// SavePayNotice save pay notice data
+func (s *PayDatabaseService) SavePayNotice(
+	ctx context.Context, payNotice *pb.PayNotice,
+) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	notice := &model.Notice{}
-	if err = copier.Copy(notice, payNotice); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	notice := newDbNotice(payNotice)
 	if dbResult := s.Create(notice); dbResult.Error != nil {
 		log.Errorf("failed to save notice! notice: %v error: %s", payNotice, err.Error())
 		err = dbResult.Error
@@ -57,13 +63,12 @@ func (s *PayDatabaseService) SavePayNotice(ctx context.Context, payNotice *pb.Pa
 	return
 }
 
-func (s *PayDatabaseService) UpdatePayNotice(ctx context.Context, payNotice *pb.PayNotice) (result *pb.ReturnResult, err error) {
+// UpdatePayNotice update notice by id
+func (s *PayDatabaseService) UpdatePayNotice(
+	ctx context.Context, payNotice *pb.PayNotice,
+) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	notice := &model.Notice{}
-	if err = copier.Copy(notice, payNotice); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	notice := newDbNotice(payNotice)
 	if dbResult := s.Model(notice).Update(notice); dbResult.Error != nil {
 		err = dbResult.Error
 		log.Errorf("failed to update notice! notice: %v error: %s", payNotice, err.Error())
@@ -74,13 +79,12 @@ func (s *PayDatabaseService) UpdatePayNotice(ctx context.Context, payNotice *pb.
 	return
 }
 
-func (s *PayDatabaseService) FindPayNotice(ctx context.Context, payNotice *pb.PayNotice) (response *pb.PayNoticeResponse, err error) {
+// FindPayNotice find notice
+func (s *PayDatabaseService) FindPayNotice(
+	ctx context.Context, payNotice *pb.PayNotice,
+) (response *pb.PayNoticeResponse, err error) {
 	log := logger.ContextLog(ctx)
-	notice := &model.Notice{}
-	if err = copier.Copy(notice, payNotice); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	notice := newDbNotice(payNotice)
 	results := make([]model.Notice, 0)
 	if results := s.Find(&results, notice); results.RecordNotFound() {
 		log.Errorf("find error: %v", s.Error.Error())
@@ -101,7 +105,10 @@ func (s *PayDatabaseService) FindPayNotice(ctx context.Context, payNotice *pb.Pa
 	return
 }
 
-func (s *PayDatabaseService) SavePayNotifyOk(ctx context.Context, payNoticeOkRequest *pb.PayNoticeOk) (result *pb.ReturnResult, err error) {
+// SavePayNotifyOk save notice ok data
+func (s *PayDatabaseService) SavePayNotifyOk(
+	ctx context.Context, payNoticeOkRequest *pb.PayNoticeOk,
+) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	tx := s.Begin()
 	defer func() {
@@ -109,20 +116,18 @@ func (s *PayDatabaseService) SavePayNotifyOk(ctx context.Context, payNoticeOkReq
 			tx.Rollback()
 		}
 	}()
-	noticeOk := &model.NoticeOk{}
-	if err = copier.Copy(noticeOk, payNoticeOkRequest); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		tx.Rollback()
-		return
-	}
+	noticeOk := newDbNoticeOk(payNoticeOkRequest)
 	if dbResult := s.Create(noticeOk); dbResult.Error != nil {
-		log.Errorf("failed to save ok order! order: %v error: %s", payNoticeOkRequest, dbResult.Error.Error())
+		log.Errorf(
+			"failed to save ok order! order: %v error: %s", payNoticeOkRequest,
+			dbResult.Error.Error(),
+		)
 		err = dbResult.Error
 		tx.Rollback()
 		return
 	}
-	notice := &model.Notice{GatewayOrderId: payNoticeOkRequest.GatewayOrderId}
-	notice.Status = constant.ORDER_STATUS_SUCCESS
+	notice := &model.Notice{GatewayOrderID: payNoticeOkRequest.GatewayOrderId}
+	notice.Status = constant.OrderStatusSuccess
 	if update := s.Model(notice).Update(notice); update.Error != nil {
 		log.Errorf("failed to update notice!")
 		tx.Rollback()
@@ -135,13 +140,12 @@ func (s *PayDatabaseService) SavePayNotifyOk(ctx context.Context, payNoticeOkReq
 	return
 }
 
-func (s *PayDatabaseService) FindPayNotifyOk(ctx context.Context, payNoticeOk *pb.PayNoticeOk) (response *pb.PayNoticeOkResponse, err error) {
+// FindPayNotifyOk find notify ok data
+func (s *PayDatabaseService) FindPayNotifyOk(
+	ctx context.Context, payNoticeOk *pb.PayNoticeOk,
+) (response *pb.PayNoticeOkResponse, err error) {
 	log := logger.ContextLog(ctx)
-	noticeOk := &model.NoticeOk{}
-	if err = copier.Copy(noticeOk, payNoticeOk); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	noticeOk := newDbNoticeOk(payNoticeOk)
 	results := make([]model.NoticeOk, 0)
 	if results := s.Find(&results, noticeOk); results.RecordNotFound() {
 		log.Errorf("find error: %v", s.Error.Error())
@@ -168,13 +172,12 @@ func (s *PayDatabaseService) FindPayNotifyOk(ctx context.Context, payNoticeOk *p
 	return
 }
 
-func (s *PayDatabaseService) UpdatePayNoticeOk(ctx context.Context, payNoticeOk *pb.PayNoticeOk) (result *pb.ReturnResult, err error) {
+// UpdatePayNoticeOk update pay notice ok data
+func (s *PayDatabaseService) UpdatePayNoticeOk(
+	ctx context.Context, payNoticeOk *pb.PayNoticeOk,
+) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	noticeOk := &model.NoticeOk{}
-	if err = copier.Copy(noticeOk, payNoticeOk); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	noticeOk := newDbNoticeOk(payNoticeOk)
 	if dbResult := s.Model(noticeOk).Update(noticeOk); dbResult.Error != nil {
 		log.Errorf("failed to save ok notice! noticeOk: %v error: %s", payNoticeOk, err.Error())
 		err = dbResult.Error
@@ -185,13 +188,12 @@ func (s *PayDatabaseService) UpdatePayNoticeOk(ctx context.Context, payNoticeOk 
 	return
 }
 
-func (s *PayDatabaseService) FindPayOrder(ctx context.Context, orderRequest *pb.PayOrder) (response *pb.PayOrderResponse, err error) {
+// FindPayOrder find pay order
+func (s *PayDatabaseService) FindPayOrder(
+	ctx context.Context, orderRequest *pb.PayOrder,
+) (response *pb.PayOrderResponse, err error) {
 	log := logger.ContextLog(ctx)
-	order := &model.PayOrder{}
-	if err = copier.Copy(order, orderRequest); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	order := newDbPayOrder(orderRequest)
 	results := make([]model.PayOrder, 0)
 	if results := s.Find(&results, order); results.RecordNotFound() {
 		log.Errorf("find error: %v", s.Error.Error())
@@ -219,13 +221,12 @@ func (s *PayDatabaseService) FindPayOrder(ctx context.Context, orderRequest *pb.
 	return
 }
 
-func (s *PayDatabaseService) FindPayOrderOk(ctx context.Context, orderOkRequest *pb.PayOrderOk) (response *pb.PayOrderOkResponse, err error) {
+// FindPayOrderOk find pay order ok data
+func (s *PayDatabaseService) FindPayOrderOk(
+	ctx context.Context, orderOkRequest *pb.PayOrderOk,
+) (response *pb.PayOrderOkResponse, err error) {
 	log := logger.ContextLog(ctx)
-	orderOk := &model.PayOrderOk{}
-	if err = copier.Copy(orderOk, orderOkRequest); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	orderOk := newDbPayOrderOk(orderOkRequest)
 	results := make([]model.PayOrderOk, 0)
 	if results := s.Find(&results, orderOk); results.RecordNotFound() {
 		log.Errorf("find error: %v", s.Error.Error())
@@ -249,15 +250,16 @@ func (s *PayDatabaseService) FindPayOrderOk(ctx context.Context, orderOkRequest 
 	return
 }
 
-func (s *PayDatabaseService) SavePayOrder(ctx context.Context, orderRequest *pb.PayOrder) (result *pb.ReturnResult, err error) {
+// SavePayOrder save pay order
+func (s *PayDatabaseService) SavePayOrder(
+	ctx context.Context, orderRequest *pb.PayOrder,
+) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	order := &model.PayOrder{}
-	if err = copier.Copy(order, orderRequest); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	order := newDbPayOrder(orderRequest)
 	if dbResult := s.Create(order); dbResult.Error != nil {
-		log.Errorf("failed to save order! order: %v error: %s", orderRequest, dbResult.Error.Error())
+		log.Errorf(
+			"failed to save order! order: %v error: %s", orderRequest, dbResult.Error.Error(),
+		)
 		err = dbResult.Error
 		return
 	}
@@ -266,15 +268,16 @@ func (s *PayDatabaseService) SavePayOrder(ctx context.Context, orderRequest *pb.
 	return
 }
 
-func (s *PayDatabaseService) UpdatePayOrder(ctx context.Context, orderRequest *pb.PayOrder) (result *pb.ReturnResult, err error) {
+// UpdatePayOrder update pay order
+func (s *PayDatabaseService) UpdatePayOrder(
+	ctx context.Context, orderRequest *pb.PayOrder,
+) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	order := &model.PayOrder{}
-	if err = copier.Copy(order, orderRequest); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	order := newDbPayOrder(orderRequest)
 	if dbResult := s.Model(order).Update(order); dbResult.Error != nil {
-		log.Errorf("failed to update order! order: %v error: %s", orderRequest, dbResult.Error.Error())
+		log.Errorf(
+			"failed to update order! order: %v error: %s", orderRequest, dbResult.Error.Error(),
+		)
 		err = dbResult.Error
 		return
 	}
@@ -283,7 +286,10 @@ func (s *PayDatabaseService) UpdatePayOrder(ctx context.Context, orderRequest *p
 	return
 }
 
-func (s *PayDatabaseService) SavePayOrderOk(ctx context.Context, orderOkRequest *pb.PayOrderOk) (result *pb.ReturnResult, err error) {
+// SavePayOrderOk save pay order ok data
+func (s *PayDatabaseService) SavePayOrderOk(
+	ctx context.Context, orderOkRequest *pb.PayOrderOk,
+) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	tx := s.Begin()
 	defer func() {
@@ -291,20 +297,17 @@ func (s *PayDatabaseService) SavePayOrderOk(ctx context.Context, orderOkRequest 
 			tx.Rollback()
 		}
 	}()
-	order := &model.PayOrderOk{}
-	if err = copier.Copy(order, orderOkRequest); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		tx.Rollback()
-		return
-	}
+	order := newDbPayOrderOk(orderOkRequest)
 	if dbResult := s.Create(order); dbResult.Error != nil {
-		log.Errorf("failed to save ok order! order: %v error: %s", orderOkRequest, dbResult.Error.Error())
+		log.Errorf(
+			"failed to save ok order! order: %v error: %s", orderOkRequest, dbResult.Error.Error(),
+		)
 		err = dbResult.Error
 		tx.Rollback()
 		return
 	}
-	payOrder := &model.PayOrder{BasePayOrder: model.BasePayOrder{GatewayOrderId: orderOkRequest.BasePayOrder.GatewayOrderId}}
-	payOrder.OrderStatus = constant.ORDER_STATUS_SUCCESS
+	payOrder := &model.PayOrder{BasePayOrder: model.BasePayOrder{GatewayOrderID: orderOkRequest.BasePayOrder.GatewayOrderId}}
+	payOrder.OrderStatus = constant.OrderStatusSuccess
 	if update := s.Model(payOrder).Update(payOrder); update.Error != nil {
 		log.Errorf("failed to update order!")
 		tx.Rollback()
@@ -317,15 +320,16 @@ func (s *PayDatabaseService) SavePayOrderOk(ctx context.Context, orderOkRequest 
 	return
 }
 
-func (s *PayDatabaseService) UpdatePayOrderOk(ctx context.Context, orderOkRequest *pb.PayOrderOk) (result *pb.ReturnResult, err error) {
+// UpdatePayOrderOk update pay order ok data
+func (s *PayDatabaseService) UpdatePayOrderOk(
+	ctx context.Context, orderOkRequest *pb.PayOrderOk,
+) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	order := &model.PayOrderOk{}
-	if err = copier.Copy(order, orderOkRequest); err != nil {
-		log.Errorf("failed to copy object! error: %s", err)
-		return
-	}
+	order := newDbPayOrderOk(orderOkRequest)
 	if dbResult := s.Model(order).Update(order); dbResult.Error != nil {
-		log.Errorf("failed to save ok order! order: %v error: %s", orderOkRequest, dbResult.Error.Error())
+		log.Errorf(
+			"failed to save ok order! order: %v error: %s", orderOkRequest, dbResult.Error.Error(),
+		)
 		err = dbResult.Error
 		return
 	}
@@ -334,7 +338,10 @@ func (s *PayDatabaseService) UpdatePayOrderOk(ctx context.Context, orderOkReques
 	return
 }
 
-func NewServer() (pb.PayDatabaseServiceServer, error) {
-	svc := &PayDatabaseService{}
+// NewServer new database service
+func NewServer(db *gorm.DB) (pb.PayDatabaseServiceServer, error) {
+	svc := &PayDatabaseService{
+		DB: db,
+	}
 	return svc, nil
 }
