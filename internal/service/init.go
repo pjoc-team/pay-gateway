@@ -25,9 +25,9 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	runtimepprof "runtime/pprof"
 	"strings"
 	"syscall"
 	"time"
@@ -251,26 +251,26 @@ func (s Server) initDebug() {
 	log := logger.Log()
 
 	if s.o.enablePprof {
-		pprofFile := fmt.Sprintf("%s-cpu.prof", s.o.name)
-		f, err := os.Create(pprofFile)
-		if err != nil {
-			log.Fatal(err)
-		}
+		// pprofFile := fmt.Sprintf("%s-cpu.prof", s.o.name)
+		// f, err := os.Create(pprofFile)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
 		// runtime.SetCPUProfileRate(10)
-		log.Infof("starting cpu profile to file: %v", pprofFile)
-		err = runtimepprof.StartCPUProfile(f)
-		if err != nil {
-			log.Errorf("failed to start cpu profile, error: %v", err.Error())
-		}
-		s.shutdownFunctions = append(
-			s.shutdownFunctions, func(ctx context.Context) {
-				runtimepprof.StopCPUProfile()
-				log.Warn("cpu profile is stopped")
-			},
-		)
+		// log.Infof("starting cpu profile to file: %v", pprofFile)
+		// err = runtimepprof.StartCPUProfile(f)
+		// if err != nil {
+		// 	log.Errorf("failed to start cpu profile, error: %v", err.Error())
+		// }
+		// s.shutdownFunctions = append(
+		// 	s.shutdownFunctions, func(ctx context.Context) {
+		// 		runtimepprof.StopCPUProfile()
+		// 		log.Warn("cpu profile is stopped")
+		// 	},
+		// )
 		go func() {
 			log.Warn("listening :61616 for pprof")
-			err3 := http.ListenAndServe(":61616", nil)
+			err3 := http.ListenAndServe(fmt.Sprintf(":%d", s.o.listenPPROF), nil)
 			if err3 != nil {
 				log.Error("failed to listen pprof, error: %v", err3.Error())
 			}

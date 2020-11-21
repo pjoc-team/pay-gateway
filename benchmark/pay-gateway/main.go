@@ -18,7 +18,7 @@ import (
 
 var (
 	concurrent = flag.Int("concurrent", 10, "concurrent")
-	count      = flag.Int("count", 100, "count per thread")
+	count      = flag.Int("count", 1000000, "count per thread")
 )
 
 func main() {
@@ -68,8 +68,9 @@ mW9/iR9koFHtTzTKhhYIgSWy9EWkQmcyrOKnEPYqMJjMobDJ1AuG`,
 		*concurrent, *count, func(ctx context.Context) error {
 			gc, err := discovery.DialTarget(ctx, "http://127.0.0.1:9090")
 			if err != nil {
-				log.Error(err.Error())
+				log.Fatal(err.Error())
 			}
+			defer gc.Close()
 			client := pb.NewPayGatewayClient(gc)
 
 			request := &pb.PayRequest{}

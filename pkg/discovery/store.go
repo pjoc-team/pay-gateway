@@ -108,7 +108,7 @@ func (f *fileStore) processFileEvent(ctx context.Context, event fsnotify.Event) 
 	f.locker.Lock()
 	defer f.locker.Unlock()
 
-	log.Infof("modified file:", event.Name)
+	log.Infof("modified file: %v", event.Name)
 	all, err2 := f.readAll()
 	if err2 != nil {
 		log.Errorf("failed to read, error: %v", err2.Error())

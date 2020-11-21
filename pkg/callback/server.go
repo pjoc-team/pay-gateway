@@ -3,7 +3,6 @@ package callback
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	pb "github.com/pjoc-team/pay-proto/go"
@@ -13,7 +12,6 @@ import (
 	"net/http"
 )
 
-const ETCD_DIR_ROOT = "/pub/pjoc/pay"
 
 type NotifyService struct {
 	services discovery.Services
@@ -28,10 +26,9 @@ func (svc *NotifyService) Notify(ctx context.Context, gatewayOrderId string,
 		log.Errorf("Failed to get db client! error: %v", e.Error())
 		return
 	}
-	timeout, _ := context.WithTimeout(context.TODO(), 10*time.Second)
 	orderQuery := &pb.PayOrder{BasePayOrder: &pb.BasePayOrder{GatewayOrderId: gatewayOrderId}}
 	var existOrder *pb.PayOrder
-	if response, err := dbService.FindPayOrder(timeout, orderQuery); err != nil {
+	if response, err := dbService.FindPayOrder(ctx, orderQuery); err != nil {
 		e = err
 		log.Errorf("Failed to find order! error: %v order: %v", err.Error(), gatewayOrderId)
 		return

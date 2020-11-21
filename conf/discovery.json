@@ -1,1 +1,1 @@
-{"pay-gateway":{"service_name":"pay-gateway","protocol":"grpc","ip":"10.80.30.62","port":9090}}
+{"database-service":{"service_name":"database-service","protocol":"grpc","ip":"192.168.50.161","port":9091},"mock":{"service_name":"mock","protocol":"grpc","ip":"192.168.50.161","port":9092},"pay-gateway":{"service_name":"pay-gateway","protocol":"grpc","ip":"192.168.50.161","port":9090}}
