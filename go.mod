@@ -11,6 +11,7 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.3.0 // indirect
+	github.com/go-playground/form v3.1.4+incompatible
 	github.com/go-playground/validator/v10 v10.4.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.2 // indirect
@@ -23,6 +24,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.5
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
+	github.com/jinzhu/gorm v1.9.12
 	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nsqio/go-nsq v1.0.8 // indirect

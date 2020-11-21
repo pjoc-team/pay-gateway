@@ -1,0 +1,6 @@
+QueueConfig:
+  queuetype: mysql
+  configvalue:
+#    mysqlconnectionurl: root:pjoc@/pay_gateway?charset=utf8&parseTime=True&loc=Local
+#    databasename: gateway
+Concurrency: 10
