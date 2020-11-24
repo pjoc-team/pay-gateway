@@ -7,6 +7,7 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/pjoc-team/pay-gateway/pkg/constant"
 	"github.com/pjoc-team/pay-gateway/pkg/date"
+	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 )
@@ -15,11 +16,13 @@ import (
 func (svc *PayGatewayService) SavePayOrder(ctx context.Context, requestContext *RequestContext) (*pb.ReturnResult, error) {
 	log := logger.ContextLog(ctx)
 
-	dbService, err2 := svc.services.GetDatabaseService(ctx)
+	var putBackClientFunc discovery.PutBackClientFunc
+	dbService, putBackClientFunc, err2 := svc.services.GetDatabaseService(ctx)
 	if err2 != nil {
 		log.Errorf("failed to get db service, err: %v", err2.Error())
 		return nil, err2
 	}
+	defer putBackClientFunc()
 
 	gatewayOrderID := requestContext.GatewayOrderID
 	request := requestContext.PayRequest
@@ -51,11 +54,12 @@ func (svc *PayGatewayService) SavePayOrder(ctx context.Context, requestContext *
 // UpdatePayOrder update pay order
 func (svc *PayGatewayService) UpdatePayOrder(ctx context.Context, requestContext *RequestContext) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	dbService, err2 := svc.services.GetDatabaseService(ctx)
+	dbService, putBackClientFunc, err2 := svc.services.GetDatabaseService(ctx)
 	if err2 != nil {
 		log.Errorf("failed to get db service, err: %v", err2.Error())
 		return nil, err2
 	}
+	defer putBackClientFunc()
 
 	if requestContext.ChannelPayResponse == nil {
 		log.Errorf("failed to update pay order! because channel response is null!")

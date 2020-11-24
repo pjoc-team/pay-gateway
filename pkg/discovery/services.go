@@ -2,14 +2,19 @@ package discovery
 
 import (
 	"context"
+	"errors"
 	grpcdialer "github.com/blademainer/commons/pkg/grpc"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracinggrpc"
-	"github.com/prometheus/common/log"
 	"google.golang.org/grpc"
 	"net/url"
+	"sync"
+	"time"
 )
+
+// ErrGetConnectionFailed get connection error
+var ErrGetConnectionFailed = errors.New("failded to get connection")
 
 // ServiceName service name
 type ServiceName string
@@ -27,23 +32,58 @@ func (s ServiceName) String() string {
 
 // Services defined services
 type Services struct {
-	Discovery *Discovery
+	Discovery   *Discovery
+	rwLocker    sync.RWMutex
+	servicePool map[string]*sync.Pool
 }
 
 // NewServices create service discovery
 func NewServices(discovery *Discovery) *Services {
 	s := &Services{
-		Discovery: discovery,
+		Discovery:   discovery,
+		servicePool: make(map[string]*sync.Pool),
 	}
 	return s
 }
 
+// PutBackClientFunc put grpc connection back
+type PutBackClientFunc func()
+
+// PutClient put client return to the pool
+func (s *Services) PutClient(serviceName string, conn *grpc.ClientConn) {
+	pool := s.getPool(serviceName)
+	pool.Put(conn)
+}
+
+func (s *Services) getPool(serviceName string) *sync.Pool {
+	s.rwLocker.RLock()
+	defer s.rwLocker.RUnlock()
+	pool := s.servicePool[serviceName]
+	if pool != nil {
+		return pool
+	}
+	// try to get lock
+	s.rwLocker.RUnlock()
+	defer s.rwLocker.RLock()
+	s.rwLocker.Lock()
+	defer s.rwLocker.Unlock()
+	pool = s.servicePool[serviceName]
+	if pool != nil {
+		return pool
+	}
+	pool = &sync.Pool{New: func() interface{} {
+		return s.dialService(serviceName)
+	}}
+	s.servicePool[serviceName] = pool
+	return pool
+}
+
 // GetChannelClient get channel client of id
 func (s *Services) GetChannelClient(ctx context.Context, id string) (
-	client pb.PayChannelClient,
+	client pb.PayChannelClient, pubBackClientFunc PutBackClientFunc,
 	err error,
 ) {
-	_, err = s.initGrpc(
+	_, pubBackClientFunc, err = s.initGrpc(
 		ctx, id, func(conn *grpc.ClientConn) interface{} {
 			client = pb.NewPayChannelClient(conn)
 			return client
@@ -53,53 +93,37 @@ func (s *Services) GetChannelClient(ctx context.Context, id string) (
 }
 
 // GetDatabaseService get channel client of id
-func (s *Services) GetDatabaseService(ctx context.Context) (pb.PayDatabaseServiceClient, error) {
+func (s *Services) GetDatabaseService(ctx context.Context) (pb.PayDatabaseServiceClient, PutBackClientFunc,
+	error) {
 	var client pb.PayDatabaseServiceClient
-	_, err := s.initGrpc(
+	_, putBackFunc, err := s.initGrpc(
 		ctx, DatabaseService.String(), func(conn *grpc.ClientConn) interface{} {
 			client = pb.NewPayDatabaseServiceClient(conn)
 			return client
 		},
 	)
-	return client, err
+	return client, putBackFunc, err
 }
 
 func (s *Services) initGrpc(
 	ctx context.Context, serviceName string,
 	grpcFunc func(conn *grpc.ClientConn) interface{},
-) (interface{}, error) {
+) (interface{}, PutBackClientFunc, error) {
 	log := logger.ContextLog(ctx)
-	svc, err := s.Discovery.GetService(ctx, serviceName)
-	if err != nil {
-		log.Errorf("failed to get service: %v error: %v", serviceName, err.Error())
-		return nil, err
+	pool := s.getPool(serviceName)
+	d := pool.Get()
+	if d == nil {
+		log.Error(ErrGetConnectionFailed.Error())
+		return nil, nil, ErrGetConnectionFailed
 	}
-	if svc.Protocol != "" && svc.Protocol != GRPC {
-		log.Errorf(
-			"service: %v's protocol is not grpc, "+
-				"actual is: %v and continue try to connect by grpc protocol",
-			serviceName,
-			svc.Protocol,
-		)
-	}
-
-	target, err := svc.BuildTarget(ctx)
-	if err != nil {
-		log.Errorf("failed to build target of service: %v error: %v", serviceName, err.Error())
-		return nil, err
-	}
-
-	d, err := DialTarget(ctx, target)
-
-	if err != nil {
-		return nil, err
-	}
-	client := grpcFunc(d)
-	return client, err
+	conn := d.(*grpc.ClientConn)
+	client := grpcFunc(conn)
+	return client, func() { pool.Put(d) }, nil
 }
 
 // DialTarget dial grpc target
 func DialTarget(ctx context.Context, target string) (*grpc.ClientConn, error) {
+	log := logger.ContextLog(ctx)
 	u, err := url.Parse(target)
 	if err != nil {
 		log.Errorf(
@@ -113,4 +137,36 @@ func DialTarget(ctx context.Context, target string) (*grpc.ClientConn, error) {
 		),
 	)
 	return d, err
+}
+
+func (s *Services) dialService(serviceName string) *grpc.ClientConn {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	log := logger.Log()
+	svc, err := s.Discovery.GetService(ctx, serviceName)
+	if err != nil {
+		log.Errorf("failed to get service: %v error: %v", serviceName, err.Error())
+		return nil
+	}
+	if svc.Protocol != "" && svc.Protocol != GRPC {
+		log.Errorf(
+			"service: %v's protocol is not grpc, "+
+				"actual is: %v and continue try to connect by grpc protocol",
+			serviceName,
+			svc.Protocol,
+		)
+	}
+
+	target, err := svc.BuildTarget(ctx)
+	if err != nil {
+		log.Errorf("failed to build target of service: %v error: %v", serviceName, err.Error())
+		return nil
+	}
+
+	d, err := DialTarget(ctx, target)
+
+	if err != nil {
+		return nil
+	}
+	return d
 }

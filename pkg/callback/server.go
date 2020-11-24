@@ -12,7 +12,6 @@ import (
 	"net/http"
 )
 
-
 type NotifyService struct {
 	services discovery.Services
 }
@@ -22,10 +21,12 @@ func (svc *NotifyService) Notify(ctx context.Context, gatewayOrderId string,
 	log := logger.ContextLog(ctx)
 
 	var dbService pb.PayDatabaseServiceClient
-	if dbService, e = svc.services.GetDatabaseService(ctx); e != nil {
+	var putBackClientFunc discovery.PutBackClientFunc
+	if dbService, putBackClientFunc, e = svc.services.GetDatabaseService(ctx); e != nil {
 		log.Errorf("Failed to get db client! error: %v", e.Error())
 		return
 	}
+	defer putBackClientFunc()
 	orderQuery := &pb.PayOrder{BasePayOrder: &pb.BasePayOrder{GatewayOrderId: gatewayOrderId}}
 	var existOrder *pb.PayOrder
 	if response, err := dbService.FindPayOrder(ctx, orderQuery); err != nil {
@@ -50,7 +51,7 @@ func (svc *NotifyService) Notify(ctx context.Context, gatewayOrderId string,
 	if e != nil {
 		log.Errorf("Failed to get settlement client! error: %v", e.Error())
 		return
-	} else if settlementClient == nil{
+	} else if settlementClient == nil {
 		log.Errorf("settlementClient is nil!")
 		e = errors.New("system error")
 		return
@@ -78,9 +79,13 @@ func (svc *NotifyService) ProcessChannel(ctx context.Context, existOrder *pb.Pay
 
 	// send to channel client
 	var client pb.PayChannelClient
-	if client, e = svc.services.GetChannelClient(ctx, channelId); e != nil {
+	var pubBackClientFunc discovery.PutBackClientFunc
+	if client, pubBackClientFunc, e = svc.services.GetChannelClient(ctx, channelId); e != nil {
 		log.Errorf("Failed to get channel client of channelId: %v! error: %v", channelId, e.Error())
 		return
+	}
+	if pubBackClientFunc != nil {
+		defer pubBackClientFunc()
 	}
 	var request *pb.HTTPRequest
 	if request, e = BuildChannelHttpRequest(ctx, r); e != nil {
