@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"context"
 	"github.com/blademainer/commons/pkg/recoverable"
 	pay "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
@@ -87,7 +88,10 @@ func (s *Scheduler) notice(payNotice *pay.PayNotice) {
 	log := logger.Log()
 
 	defer recoverable.Recover()
-	err := s.noticeService.SendPayNotice(payNotice)
+	ctx, cancel := context.WithTimeout(context.Background(),
+		5 * time.Second)// TODO timeout from config
+	defer cancel()
+	err := s.noticeService.SendPayNotice(ctx, payNotice)
 	if err != nil {
 		log.Errorf("Failed to send notice! order: %v error: %v", payNotice, err.Error())
 		err = s.noticeService.UpdatePayNoticeFail(payNotice, err)
