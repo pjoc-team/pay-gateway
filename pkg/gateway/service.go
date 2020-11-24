@@ -83,7 +83,8 @@ func (svc *PayGatewayService) Pay(
 	}
 
 	var client pb.PayChannelClient
-	client, err = svc.services.GetChannelClient(ctx, request.GetChannelId())
+	var putBackClientFunc discovery.PutBackClientFunc
+	client, putBackClientFunc, err = svc.services.GetChannelClient(ctx, request.GetChannelId())
 	if client == nil || err != nil {
 		log.Errorf(
 			"Failed to get channelClient! channelID: %s, error: %s, ", request.GetChannelId(),
@@ -91,6 +92,7 @@ func (svc *PayGatewayService) Pay(
 		)
 		return BuildSystemErrorResponse(err), nil
 	}
+	defer putBackClientFunc()
 	log.Debugf("Got client: %v for channelID: %s", client, request.GetChannelId())
 	var channelPayRequest *pb.ChannelPayRequest
 	if channelPayRequest, err = svc.GenerateChannelPayRequest(ctx, requestContext); err != nil {
