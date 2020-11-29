@@ -2,22 +2,27 @@ package callback
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
+	"github.com/pjoc-team/tracing/tracing"
 	"time"
 
 	"net/http"
 )
 
 type NotifyService struct {
-	services discovery.Services
+	services *discovery.Services
 }
 
-func (svc *NotifyService) Notify(ctx context.Context, gatewayOrderId string,
-	r *http.Request) (notifyResponse *pb.NotifyResponse, e error) {
+func (svc *NotifyService) Notify(
+	ctx context.Context, gatewayOrderId string,
+	r *http.Request,
+) (notifyResponse *pb.NotifyResponse, e error) {
+	span, ctx := tracing.Start(ctx, "notify")
+	defer span.Finish()
+
 	log := logger.ContextLog(ctx)
 
 	var dbService pb.PayDatabaseServiceClient
@@ -47,20 +52,15 @@ func (svc *NotifyService) Notify(ctx context.Context, gatewayOrderId string,
 		return
 	}
 
-	settlementClient, e := svc.GetSettlementClient()
+	settlementClient, pubBackClientFunc, e := svc.services.GetSettlementClient(ctx)
 	if e != nil {
 		log.Errorf("Failed to get settlement client! error: %v", e.Error())
 		return
-	} else if settlementClient == nil {
-		log.Errorf("settlementClient is nil!")
-		e = errors.New("system error")
-		return
 	}
+	defer pubBackClientFunc()
 
 	settlementRequest := &pb.SettlementPayOrder{Order: existOrder}
-	timeoutSettle, _ := context.WithTimeout(context.TODO(), 10*time.Second)
-
-	settlementResponse, e := settlementClient.ProcessOrderSuccess(timeoutSettle, settlementRequest)
+	settlementResponse, e := settlementClient.ProcessOrderSuccess(ctx, settlementRequest)
 	if e != nil {
 		log.Errorf("Failed to settle order: %v error: %v", existOrder, e.Error())
 		return
@@ -70,8 +70,10 @@ func (svc *NotifyService) Notify(ctx context.Context, gatewayOrderId string,
 	return
 }
 
-func (svc *NotifyService) ProcessChannel(ctx context.Context, existOrder *pb.PayOrder,
-	r *http.Request) (notifyResponse *pb.NotifyResponse, e error) {
+func (svc *NotifyService) ProcessChannel(
+	ctx context.Context, existOrder *pb.PayOrder,
+	r *http.Request,
+) (notifyResponse *pb.NotifyResponse, e error) {
 	log := logger.ContextLog(ctx)
 
 	channelId := existOrder.BasePayOrder.ChannelId
@@ -92,7 +94,10 @@ func (svc *NotifyService) ProcessChannel(ctx context.Context, existOrder *pb.Pay
 		log.Errorf("Failed to build notify request! error: %v", e.Error())
 		return
 	}
-	notifyRequest := &pb.NotifyRequest{PaymentAccount: channelAccount, Request: request, Type: pb.PayType_PAY, Method: existOrder.BasePayOrder.Method}
+	notifyRequest := &pb.NotifyRequest{
+		PaymentAccount: channelAccount, Request: request, Type: pb.PayType_PAY,
+		Method: existOrder.BasePayOrder.Method,
+	}
 
 	timeoutChannel, _ := context.WithTimeout(context.TODO(), 10*time.Second)
 	if notifyResponse, e = client.Notify(timeoutChannel, notifyRequest); e != nil {
@@ -104,7 +109,7 @@ func (svc *NotifyService) ProcessChannel(ctx context.Context, existOrder *pb.Pay
 	return
 }
 
-func Init(services discovery.Services) *NotifyService {
+func Init(services *discovery.Services) *NotifyService {
 	notify := &NotifyService{}
 	notify.services = services
 
