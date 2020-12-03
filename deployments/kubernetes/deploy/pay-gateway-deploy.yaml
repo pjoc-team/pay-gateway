@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pay-gateway
+  labels:
+    app: pay-gateway
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: pay-gateway
+      labels:
+        app: pay-gateway
+    spec:
+      containers:
+        - name: pay-gateway
+          image: pjoc/pay-gateway
+          command: [ "bash", "-c", "/app/main", "--listen-http=:8080", "--listen=:9090", "--log-level=debug" ]
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: pay-gateway
