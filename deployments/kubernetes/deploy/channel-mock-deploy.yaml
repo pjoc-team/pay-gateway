@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: channel-mock
+  labels:
+    app: channel-mock
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: channel-mock
+      labels:
+        app: channel-mock
+    spec:
+      containers:
+        - name: channel-mock
+          image: pjoc/channel-mock
+          command: [ "bash", "-c", "/app/channel-mock", "--listen-http=:8080", "--listen=:9090", "--log-level=debug" ]
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: channel-mock

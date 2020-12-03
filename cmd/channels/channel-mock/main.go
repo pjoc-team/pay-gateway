@@ -16,7 +16,7 @@ import (
 	"os"
 )
 
-const serviceName = discovery.ServiceName("mock")
+const serviceName = discovery.ServiceName("channel-mock")
 
 var (
 	configURL string

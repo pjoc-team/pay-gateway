@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-service
+  labels:
+    app: database-service
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: database-service
+      labels:
+        app: database-service
+    spec:
+      containers:
+        - name: database-service
+          image: pjoc/pay-gateway
+          command: [ "bash", "-c", "/app/database-service", "--listen-http=:8080", "--listen=:9090", "--log-level=debug" ]
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: database-service
