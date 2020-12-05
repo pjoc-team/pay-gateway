@@ -78,6 +78,7 @@ type options struct {
 	flagSet           []*pflag.FlagSet
 	store             string
 	enablePprof       bool
+	inProcessGateway  bool
 }
 
 func (o *options) apply(options ...Option) {
@@ -209,6 +210,7 @@ func (s *Server) flags() *pflag.FlagSet {
 		&s.o.enablePprof, "enable-pprof", true,
 		"turn on pprof debug tools",
 	)
+	flagSet.BoolVar(&s.o.inProcessGateway, "inprocess-gateway", true, "grpc and gateway in process")
 	for _, p := range s.o.flagSet {
 		flagSet.AddFlagSet(p)
 	}
@@ -455,6 +457,7 @@ func (s *Server) initGrpc() error {
 		OrigName:     true,  // 使用json tag里面的字段
 		EmitDefaults: true,  // json返回零值
 	}
+
 	mux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler),
 		runtime.WithMetadata(metadata.ParseHeaderAndQueryToMD),
@@ -575,7 +578,7 @@ func (s *Server) initGrpc() error {
 
 			hs := &http.Server{
 				Addr:    fmt.Sprintf(":%d", s.o.listenHTTP),
-				Handler: h,
+				Handler: allowCORS(mux),
 			}
 
 			s.shutdownFunctions = append(
