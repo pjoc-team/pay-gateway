@@ -25,7 +25,7 @@ type Service struct {
 	pb.PayDatabaseServiceClient
 	GatewayConfig *model.GatewayConfig
 	UrlGenerator  *UrlGenerator
-	NoticeQueue   Queue
+	NotifyQueue   Queue
 }
 
 func NewService(config QueueConfig, dbClient pb.PayDatabaseServiceClient,
@@ -39,17 +39,17 @@ func NewService(config QueueConfig, dbClient pb.PayDatabaseServiceClient,
 		log.Errorf("Failed to init queue! error: %v", err.Error())
 		return
 	}
-	noticeService.NoticeQueue = queue
+	noticeService.NotifyQueue = queue
 	noticeService.GatewayConfig = gatewayConfig
 	noticeService.PayDatabaseServiceClient = dbClient
 	noticeService.UrlGenerator = NewUrlGenerator(clients)
 	return
 }
 
-func (svc *Service) Notify(notify *pb.PayNotice) error {
+func (svc *Service) Notify(ctx context.Context, notify *pb.PayNotice) error {
 	log := logger.Log()
 
-	err := svc.NoticeQueue.Push(*notify)
+	err := svc.NotifyQueue.Push(ctx, *notify)
 	if err != nil {
 		log.Errorf("Failed to push to queue! error: %v", err)
 	}
@@ -68,14 +68,12 @@ func (svc *Service) GeneratePayNotice(order *pb.PayOrder) *pb.PayNotice {
 	return notify
 }
 
-func (svc *Service) UpdatePayNoticeSuccess(notify *pb.PayNotice) (err error) {
+func (svc *Service) UpdatePayNoticeSuccess(ctx context.Context,notify *pb.PayNotice) (err error) {
 	log := logger.Log()
 
 	notify.NoticeTime = date.NowTime()
 	notify.Status = constant.OrderStatusSuccess
 	notify.NoticeTime = date.NowTime()
-
-	timeoutCtx, _ := context.WithTimeout(context.TODO(), 6*time.Second)
 
 	noticeOk := &pb.PayNoticeOk{}
 	if err = copier.Copy(noticeOk, notify); err != nil {
@@ -84,7 +82,7 @@ func (svc *Service) UpdatePayNoticeSuccess(notify *pb.PayNotice) (err error) {
 	}
 
 	noticeOk.GatewayOrderId = notify.GatewayOrderId
-	returnResult, err := svc.SavePayNotifyOk(timeoutCtx, noticeOk)
+	returnResult, err := svc.SavePayNotifyOk(ctx, noticeOk)
 	if err != nil {
 		log.Errorf("Failed to update notify! orderId: %v error: %v", notify.GatewayOrderId, err.Error())
 		return
@@ -94,7 +92,8 @@ func (svc *Service) UpdatePayNoticeSuccess(notify *pb.PayNotice) (err error) {
 	return
 }
 
-func (svc *Service) UpdatePayNoticeFail(notify *pb.PayNotice, reason error) (err error) {
+func (svc *Service) UpdatePayNoticeFail(ctx context.Context,notify *pb.PayNotice,
+	reason error) (err error) {
 	log := logger.Log()
 	notify.Status = constant.OrderStatusFailed
 	notify.ErrorMessage = reason.Error()
@@ -110,8 +109,7 @@ func (svc *Service) UpdatePayNoticeFail(notify *pb.PayNotice, reason error) (err
 
 	notify.FailTimes++
 	notify.NextNotifyTime = nextTimeStr
-	timeoutCtx, _ := context.WithTimeout(context.TODO(), 6*time.Second)
-	result, err := svc.UpdatePayNotice(timeoutCtx, notify)
+	result, err := svc.UpdatePayNotice(ctx, notify)
 	if err != nil {
 		return
 	} else {
@@ -127,8 +125,7 @@ func (svc *Service) SendPayNotice(ctx context.Context, notify *pb.PayNotice) (er
 
 	payOrderOkQuery := &pb.PayOrderOk{}
 	payOrderOkQuery.BasePayOrder = &pb.BasePayOrder{GatewayOrderId: notify.GatewayOrderId}
-	timeoutCtx, _ := context.WithTimeout(context.TODO(), 6*time.Second)
-	response, err := svc.FindPayOrderOk(timeoutCtx, payOrderOkQuery)
+	response, err := svc.FindPayOrderOk(ctx, payOrderOkQuery)
 	if err != nil {
 		log.Errorf("Failed to find order ok! error: %v", err)
 		return
@@ -151,7 +148,7 @@ func (svc *Service) SendPayNotice(ctx context.Context, notify *pb.PayNotice) (er
 	} else if url == "" {
 		errorf := fmt.Errorf("there is no notify url of order: %v ", payOrderOk)
 		log.Error(errorf)
-		err2 := svc.UpdatePayNoticeFail(notify, fmt.Errorf("there is no notify url of order"))
+		err2 := svc.UpdatePayNoticeFail(ctx, notify, fmt.Errorf("there is no notify url of order"))
 		if err2 != nil{
 			log.Errorf("update db with error: %v", err.Error())
 		}
@@ -177,7 +174,7 @@ func (svc *Service) SendPayNotice(ctx context.Context, notify *pb.PayNotice) (er
 		err = fmt.Errorf("failed to notify! response is not expect value: %v factul is: %v",
 			SuccessResponse, responseString)
 		// Save notify when fail!
-		err2 := svc.UpdatePayNoticeFail(notify, err)
+		err2 := svc.UpdatePayNoticeFail(ctx, notify, err)
 		if err2 != nil{
 			log.Errorf("update db with error: %v", err.Error())
 		}

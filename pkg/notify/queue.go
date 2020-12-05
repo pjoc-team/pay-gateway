@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	pay "github.com/pjoc-team/pay-proto/go"
@@ -14,8 +15,8 @@ type MessageSerializer interface {
 }
 
 type Queue interface {
-	Pull() ([]*pay.PayNotice, error)
-	Push(pay.PayNotice) error
+	Pull(ctx context.Context) ([]*pay.PayNotice, error)
+	Push(context.Context, pay.PayNotice) error
 	MessageSerializer() MessageSerializer
 }
 

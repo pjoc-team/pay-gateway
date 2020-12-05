@@ -9,6 +9,7 @@ import (
 )
 
 type Scheduler struct {
+	ctx context.Context
 	queue         Queue              `json:"-" yaml:"-"`
 	QueueConfig   *QueueConfig       `json:"queue_config" yaml:"QueueConfig"`
 	NotifyCh      chan pay.PayNotice `json:"-" yaml:"-"`
@@ -18,7 +19,8 @@ type Scheduler struct {
 	Concurrency   int                `json:"concurrency" yaml:"Concurrency"`
 }
 
-func InitScheduler(config *QueueConfig, concurrency int, noticeService *Service) (scheduler *Scheduler, err error) {
+func InitScheduler(ctx context.Context, config *QueueConfig, concurrency int,
+	noticeService *Service) (scheduler *Scheduler, err error) {
 	log := logger.Log()
 
 	queue, err := InstanceQueue(*config, noticeService)
@@ -27,6 +29,7 @@ func InitScheduler(config *QueueConfig, concurrency int, noticeService *Service)
 	}
 
 	scheduler = &Scheduler{}
+	scheduler.ctx = ctx
 	scheduler.NotifyCh = make(chan pay.PayNotice, concurrency)
 	scheduler.done = make(chan bool, 1)
 	scheduler.queue = queue
@@ -39,9 +42,9 @@ func InitScheduler(config *QueueConfig, concurrency int, noticeService *Service)
 	return
 }
 
-func (s *Scheduler) Start() {
-	go s.startConsumer()
-	go s.startNotice()
+func (s *Scheduler) Start(ctx context.Context) {
+	go s.startConsumer(ctx)
+	go s.startNotice(ctx)
 }
 
 func (s *Scheduler) Stop() {
@@ -49,17 +52,18 @@ func (s *Scheduler) Stop() {
 	s.done <- true
 }
 
-func (s *Scheduler) startConsumer() {
+func (s *Scheduler) startConsumer(ctx context.Context) {
 	log := logger.Log()
 
 	defer recoverable.Recover()
 	for !s.stopped {
-		notices, e := s.queue.Pull()
+		notices, e := s.queue.Pull(ctx)
 		if e != nil {
 			log.Errorf("Failed to pull! error: %v", e)
 			continue
-		} else if notices == nil || len(notices) == 0 {
+		} else if len(notices) == 0 {
 			time.Sleep(time.Second)
+			continue
 		} else {
 			log.Infof("Pulled notices: %v", notices)
 		}
@@ -69,42 +73,44 @@ func (s *Scheduler) startConsumer() {
 	}
 }
 
-func (s *Scheduler) startNotice() {
+func (s *Scheduler) startNotice(ctx context.Context) {
 	for i := 0; i < s.Concurrency; i++ {
-		go s.startThreads()
+		go s.startThreads(ctx)
 	}
 }
 
-func (s *Scheduler) startThreads() {
+func (s *Scheduler) startThreads(ctx context.Context) {
+	log := logger.ContextLog(ctx)
 	for !s.stopped {
 		select {
+		case <-ctx.Done():
+			log.Warn("scheduler's threads stopped!")
+			s.stopped = true
+			return
 		case notice := <-s.NotifyCh:
-			s.notice(&notice)
+			s.notify(ctx, &notice)
 		}
 	}
 }
 
-func (s *Scheduler) notice(payNotice *pay.PayNotice) {
+func (s *Scheduler) notify(ctx context.Context, payNotice *pay.PayNotice) {
 	log := logger.Log()
 
 	defer recoverable.Recover()
-	ctx, cancel := context.WithTimeout(context.Background(),
-		5 * time.Second)// TODO timeout from config
-	defer cancel()
 	err := s.notifyService.SendPayNotice(ctx, payNotice)
 	if err != nil {
-		log.Errorf("Failed to send notice! order: %v error: %v", payNotice, err.Error())
-		err = s.notifyService.UpdatePayNoticeFail(payNotice, err)
+		log.Errorf("Failed to send notify! order: %v error: %v", payNotice, err.Error())
+		err = s.notifyService.UpdatePayNoticeFail(ctx, payNotice, err)
 		if err != nil {
-			log.Errorf("Failed to update db! notice: %v error: %v", payNotice, err.Error())
+			log.Errorf("Failed to update db! notify: %v error: %v", payNotice, err.Error())
 		} else {
-			log.Debugf("Success to update notice! notice: %v", payNotice)
+			log.Debugf("Success to update notify! notify: %v", payNotice)
 		}
 		return
 	}
-	err = s.notifyService.UpdatePayNoticeSuccess(payNotice)
+	err = s.notifyService.UpdatePayNoticeSuccess(ctx, payNotice)
 	if err != nil {
-		log.Errorf("Failed to update notice ok! notice: %v error: %v", payNotice, err.Error())
+		log.Errorf("Failed to update notify ok! notify: %v error: %v", payNotice, err.Error())
 	}
 
 }

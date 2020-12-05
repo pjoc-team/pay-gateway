@@ -7,7 +7,6 @@ import (
 	pay "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"sync"
-	"time"
 )
 
 const (
@@ -29,13 +28,15 @@ func instanceFunc(queueConfig QueueConfig, config interface{}, svc *Service) (Qu
 	return queue, nil
 }
 
+// MySQLConfig mysql queue config
 type MySQLConfig struct {
-	//MySQLConnectionUrl string `json:"mysql_connection_url"`
-	//DatabaseName       string `json:"database_name"`
-	//TableName          string `json:"table_name"`
-	//TimeColumnName     string `json:"time_column_name"`
+	// MySQLConnectionUrl string `json:"mysql_connection_url"`
+	// DatabaseName       string `json:"database_name"`
+	// TableName          string `json:"table_name"`
+	// TimeColumnName     string `json:"time_column_name"`
 }
 
+// MysqlQueue queue type: mysql
 type MysqlQueue struct {
 	config      *MySQLConfig
 	svc         *Service
@@ -43,14 +44,13 @@ type MysqlQueue struct {
 	sync.Mutex
 }
 
-func (m *MysqlQueue) Pull() (payNotices []*pay.PayNotice, err error) {
-	log := logger.Log()
-	timeoutCtx, _ := context.WithTimeout(context.TODO(), 6*time.Second)
+func (m *MysqlQueue) Pull(ctx context.Context) (payNotices []*pay.PayNotice, err error) {
+	log := logger.ContextLog(ctx)
 	payNoticeQuery := &pay.PayNotice{}
 	payNoticeQuery.NextNotifyTime = date.NowTime()
-	response, err := m.svc.FindPayNoticeLessThenTime(timeoutCtx, payNoticeQuery)
+	response, err := m.svc.FindPayNoticeLessThenTime(ctx, payNoticeQuery)
 	if err != nil {
-		log.Errorf("Failed to find notice! error: %v", err.Error())
+		log.Errorf("Failed to find notify! error: %v", err.Error())
 		return
 	} else {
 		log.Infof("Found notices: %v", response.PayNotices)
@@ -60,55 +60,50 @@ func (m *MysqlQueue) Pull() (payNotices []*pay.PayNotice, err error) {
 		var nextTimeStr string
 		nextTimeStr, err = NextTimeToNotice(notice.GetFailTimes(), m.svc.GatewayConfig.NoticeConfig.NoticeDelaySecondExpressions)
 		if err != nil {
-			log.Errorf("Failed to get next notice time! error: %v", err.Error())
+			log.Errorf("Failed to get next notify time! error: %v", err.Error())
 			notice.NextNotifyTime = ""
 		} else {
 			notice.NextNotifyTime = nextTimeStr
 		}
-		timeout, _ := context.WithTimeout(context.TODO(), 6*time.Second)
 		var result *pay.ReturnResult
-		result, err = m.svc.UpdatePayNotice(timeout, notice)
+		result, err = m.svc.UpdatePayNotice(ctx, notice)
 		if err != nil {
-			log.Errorf("Failed to update notice time! error: %v", notice)
+			log.Errorf("Failed to update notify time! error: %v", notice)
 			return
 		} else {
-			log.Infof("Update notice: %v with result: %v", notice, result)
+			log.Infof("Update notify: %v with result: %v", notice, result)
 		}
 	}
 	payNotices = response.PayNotices
 	return
 }
 
-func (m *MysqlQueue) Push(notice pay.PayNotice) (err error) {
-	log := logger.Log()
-
-	timeoutCtx, _ := context.WithTimeout(context.TODO(), 6*time.Second)
+func (m *MysqlQueue) Push(ctx context.Context, notice pay.PayNotice) (err error) {
+	log := logger.ContextLog(ctx)
 
 	var response *pay.PayNoticeResponse
-	response, err = m.svc.FindPayNotice(timeoutCtx, &notice)
+	response, err = m.svc.FindPayNotice(ctx, &notice)
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
-		log.Errorf("Failed to find pay notice! error: %v", err.Error())
+		log.Errorf("Failed to find pay notify! error: %v", err.Error())
 		return
 	} else if err != nil && gorm.IsRecordNotFoundError(err) {
-		timeoutCtx2, _ := context.WithTimeout(context.TODO(), 6*time.Second)
 		var result *pay.ReturnResult
-		if result, err = m.svc.SavePayNotice(timeoutCtx2, &notice); err != nil {
-			log.Errorf("Failed to save notice! notice: %v error: %v", notice, err.Error())
+		if result, err = m.svc.SavePayNotice(ctx, &notice); err != nil {
+			log.Errorf("Failed to save notify! notify: %v error: %v", notice, err.Error())
 			return
 		} else {
-			log.Infof("Save notice: %v result: %v", notice, result)
+			log.Infof("Save notify: %v result: %v", notice, result)
 			return
 		}
 	}
 	payNotice := response.PayNotices[0]
 	payNotice.NextNotifyTime = date.NowTime()
-	timeoutCtx2, _ := context.WithTimeout(context.TODO(), 6*time.Second)
 	var result *pay.ReturnResult
-	if result, err = m.svc.UpdatePayNotice(timeoutCtx2, payNotice); err != nil {
-		log.Errorf("Failed to update notice! notice: %v error: %v", notice, err.Error())
+	if result, err = m.svc.UpdatePayNotice(ctx, payNotice); err != nil {
+		log.Errorf("Failed to update notify! notify: %v error: %v", notice, err.Error())
 		return
 	} else {
-		log.Infof("Update notice: %v result: %v", notice, result)
+		log.Infof("Update notify: %v result: %v", notice, result)
 	}
 
 	return
