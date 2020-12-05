@@ -500,9 +500,9 @@ func (s *Server) initGrpc() error {
 				s.shutdownFunctions, func(ctx context.Context) {
 					gs.GracefulStop()
 
-					if err := l.Close(); err != nil {
-						log.Errorf("Failed to close %s %s, err: %v", s.o.network, s.o.listen, err)
-					}
+					// if err := l.Close(); err != nil {
+					// 	log.Errorf("failed to close %v %v, err: %v", s.o.network, s.o.listen, err)
+					// }
 				},
 			)
 

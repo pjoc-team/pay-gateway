@@ -34,7 +34,7 @@ func (s *PayDatabaseService) FindPayNotifyLessThenTime(
 		return
 	}
 	response = &pb.PayNotifyResponse{}
-	response.PayNotifys = make([]*pb.PayNotify, len(results))
+	response.PayNotifies = make([]*pb.PayNotify, len(results))
 	for i, notify := range results {
 		payNotify := &pb.PayNotify{}
 		if err = copier.Copy(payNotify, notify); err != nil {
@@ -42,7 +42,7 @@ func (s *PayDatabaseService) FindPayNotifyLessThenTime(
 		} else {
 			log.Debugf("found result: %v by query: %v", response, payNotify)
 		}
-		response.PayNotifys[i] = payNotify
+		response.PayNotifies[i] = payNotify
 	}
 	return
 }
@@ -91,7 +91,7 @@ func (s *PayDatabaseService) FindPayNotify(
 		return
 	}
 	response = &pb.PayNotifyResponse{}
-	response.PayNotifys = make([]*pb.PayNotify, len(results))
+	response.PayNotifies = make([]*pb.PayNotify, len(results))
 	for i, notify := range results {
 		payNotify := &pb.PayNotify{}
 		if err = copier.Copy(payNotify, notify); err != nil {
@@ -99,7 +99,7 @@ func (s *PayDatabaseService) FindPayNotify(
 		} else {
 			log.Debugf("found result: %v by query: %v", response, payNotify)
 		}
-		response.PayNotifys[i] = payNotify
+		response.PayNotifies[i] = payNotify
 	}
 
 	return

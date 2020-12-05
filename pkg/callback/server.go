@@ -7,6 +7,7 @@ import (
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
+	"google.golang.org/genproto/googleapis/api/httpbody"
 	"net/http"
 )
 
@@ -15,11 +16,35 @@ type NotifyService struct {
 	services *discovery.Services
 }
 
+func (svc *NotifyService) CallbackByGet(
+	ctx context.Context, request *pb.HttpCallbackRequest,
+) (*httpbody.HttpBody, error) {
+	log := logger.ContextLog(ctx)
+	log.Infof("request: %v", request)
+	resp := &httpbody.HttpBody{
+		ContentType: "text/html",
+		Data:        []byte("get ok"),
+	}
+	return resp, nil
+}
+
+func (svc *NotifyService) CallbackByPost(
+	ctx context.Context, request *pb.HttpCallbackRequest,
+) (*httpbody.HttpBody, error) {
+	log := logger.ContextLog(ctx)
+	log.Infof("request: %v", request)
+	resp := &httpbody.HttpBody{
+		ContentType: "text/html",
+		Data:        []byte("post ok"),
+	}
+	return resp, nil
+}
+
 // Notify notify by order id
 func (svc *NotifyService) Notify(
 	ctx context.Context, gatewayOrderID string,
 	r *http.Request,
-) (notifyResponse *pb.NotifyResponse, e error) {
+) (notifyResponse *pb.ChannelNotifyResponse, e error) {
 	span, ctx := tracing.Start(ctx, "notify")
 	defer span.Finish()
 
@@ -73,7 +98,7 @@ func (svc *NotifyService) Notify(
 func (svc *NotifyService) ProcessChannel(
 	ctx context.Context, existOrder *pb.PayOrder,
 	r *http.Request,
-) (notifyResponse *pb.NotifyResponse, e error) {
+) (notifyResponse *pb.ChannelNotifyResponse, e error) {
 	log := logger.ContextLog(ctx)
 
 	channelID := existOrder.BasePayOrder.ChannelId
@@ -94,12 +119,12 @@ func (svc *NotifyService) ProcessChannel(
 		log.Errorf("Failed to build notify request! error: %v", e.Error())
 		return
 	}
-	notifyRequest := &pb.NotifyRequest{
+	notifyRequest := &pb.ChannelNotifyRequest{
 		PaymentAccount: channelAccount, Request: request, Type: pb.PayType_PAY,
 		Method: existOrder.BasePayOrder.Method,
 	}
 
-	if notifyResponse, e = client.Notify(ctx, notifyRequest); e != nil {
+	if notifyResponse, e = client.ChannelNotify(ctx, notifyRequest); e != nil {
 		log.Errorf("Failed to notify channel! order: %v error: %v", existOrder, e.Error())
 		return
 	}
@@ -107,10 +132,10 @@ func (svc *NotifyService) ProcessChannel(
 	return
 }
 
-// Init init notify service
-func Init(services *discovery.Services) *NotifyService {
+// NewServer init notify service
+func NewServer(services *discovery.Services) (pb.ChannelCallbackServer, error) {
 	notify := &NotifyService{}
 	notify.services = services
 
-	return notify
+	return notify, nil
 }
