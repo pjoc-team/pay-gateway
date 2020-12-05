@@ -5,9 +5,13 @@ name: official-docker
 # events but only for the master branch
 on:
   push:
-    branches: [ "*" ]
+    branches:
+      - "*"
+    tags:
+      - 'v*.*.*'
   pull_request:
-    branches: [ "*" ]
+    branches:
+      - "*"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:

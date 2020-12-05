@@ -55,7 +55,7 @@ $(PKGS): $(GOLINT) $(FGT)
 	@go test -v $@
 
 .PHONY: lint
-lint: vendor | $(PKGS) $(GOLINT) # ❷
+lint:  $(PKGS) $(GOLINT) # ❷
 	@cd $(BASE) && ret=0 && for pkg in $(PKGS); do \
 	    test -z "$$($(GOLINT) $$pkg | tee /dev/stderr)" || ret=1 ; \
 	done ; exit $$ret

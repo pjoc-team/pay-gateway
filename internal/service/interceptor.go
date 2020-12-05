@@ -65,19 +65,19 @@ func healthInterceptor(healthServer *health.Server) http.Handler {
 		checkRequest := &healthpb.HealthCheckRequest{}
 		check, err3 := healthServer.Check(request.Context(), checkRequest)
 		if err3 != nil {
-			logger.Errorf("unhealth status")
+			log.Errorf("unhealth status")
 			writer.WriteHeader(http.StatusBadGateway)
 			return
 		}
 		marshal, err3 := json.Marshal(check)
 		if err3 != nil {
-			logger.Errorf("failed to marshal HealthResponse: %v", err3.Error())
+			log.Errorf("failed to marshal HealthResponse: %v", err3.Error())
 			writer.WriteHeader(http.StatusBadGateway)
 			return
 		}
 		_, err3 = writer.Write(marshal)
 		if err3 != nil {
-			logger.Errorf("failed to write Response: %v error: %v", string(marshal), err3.Error())
+			log.Errorf("failed to write Response: %v error: %v", string(marshal), err3.Error())
 			writer.WriteHeader(http.StatusBadGateway)
 			return
 		}
