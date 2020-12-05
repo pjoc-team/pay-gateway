@@ -12,12 +12,11 @@ func TestUnmarshal(t *testing.T) {
 	bytes, _ := yaml.Marshal(s)
 	fmt.Println(string(bytes))
 	fmt.Println(s.QueueConfig)
-	if queue, e := InstanceQueue(*s.QueueConfig, &Service{}); e != nil{
+	queue, e := InstanceQueue(*s.QueueConfig, &Service{})
+	if e != nil {
 		fmt.Println(e.Error())
 		return
-	} else {
-		fmt.Println(queue)
 	}
-
+	fmt.Println(queue)
 
 }

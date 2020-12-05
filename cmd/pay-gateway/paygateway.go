@@ -62,7 +62,7 @@ func main() {
 	}
 
 	payGateway, err := service.NewPayGateway(
-		configClients, c.clusterID, c.concurrency, s.GetServices(),
+		configClients, c.clusterID, c.concurrency, s.GetDiscoveryServices(),
 	)
 	if err != nil {
 		log.Fatal(err.Error())

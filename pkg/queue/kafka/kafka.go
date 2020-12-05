@@ -88,7 +88,9 @@ func instanceFunc(ic interface{}) (i queue.Interface, err error) {
 	if c.Version != "" {
 		config.Version, err = sarama.ParseKafkaVersion(c.Version)
 		if err != nil {
-			err = fmt.Errorf("could'nt parse KafkaVersion: %v to kafka config, error: %v", c.Version, err.Error())
+			err = fmt.Errorf(
+				"could'nt parse KafkaVersion: %v to kafka config, error: %v", c.Version, err.Error(),
+			)
 			return nil, err
 		}
 	} else {
@@ -115,15 +117,15 @@ func instanceFunc(ic interface{}) (i queue.Interface, err error) {
 
 // Config kafka配置
 type Config struct {
-	Brokers string `json:"brokers" validate:"required"`
+	Brokers       string `json:"brokers" validate:"required"`
 	Group         string `json:"group" validate:"required"`
 	Version       string `json:"version"`
 	OffsetInitial string `json:"offset_initial"`
 }
 
 type kafka struct {
-	config            *Config
-	kafkaConfig       sarama.Config
+	config *Config
+	// kafkaConfig       sarama.Config
 	consumerGroupFunc func() (sarama.ConsumerGroup, error)
 	producer          sarama.SyncProducer
 }
@@ -161,7 +163,9 @@ func (k *kafkaConsumer) Cleanup(sarama.ConsumerGroupSession) error {
 	return nil
 }
 
-func (k *kafkaConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+func (k *kafkaConsumer) ConsumeClaim(
+	session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim,
+) error {
 	log := logger.ContextLog(k.ctx)
 	log.Infof("begin consume topic: %v", claim.Topic())
 
@@ -186,8 +190,11 @@ func (k *kafkaConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 			select {
 			case k.mc <- msg:
 				log.Debugf("succeed to push message: %v", string(msg.Row))
-				//default:
-				//log.Errorf("msg chan is full!")
+			// default:
+			// log.Errorf("msg chan is full!")
+			case <-k.ctx.Done():
+				log.Warnf("stream: %v closed", k)
+				return nil
 			}
 
 		case <-k.ctx.Done():
@@ -198,7 +205,9 @@ func (k *kafkaConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 }
 
 // NewConsumer create consumer
-func (k *kafka) NewConsumer(ctx context.Context, kafkaConfig *Config, mc chan<- *queue.Message) *kafkaConsumer {
+func (k *kafka) NewConsumer(
+	ctx context.Context, kafkaConfig *Config, mc chan<- *queue.Message,
+) *kafkaConsumer {
 	consumer := &kafkaConsumer{
 		mc:          mc,
 		ctx:         ctx,
@@ -212,15 +221,24 @@ func (k *kafka) NewConsumer(ctx context.Context, kafkaConfig *Config, mc chan<- 
 // messages: is the channel of message need to write.
 //
 // ack: processed message channel of this handler.
-func (k *kafka) ConsumeTopics(ctx context.Context, topics string, messages chan<- *queue.Message) (err error) {
+func (k *kafka) ConsumeTopics(
+	ctx context.Context, topics string, messages chan<- *queue.Message,
+) (err error) {
 	topicArray := queue.ParseBrokers(topics)
 	log := logger.ContextLog(ctx)
 	log.Infof("begin consume topic: %v", topics)
-	go k.consume(ctx, topicArray, messages)
+	go func() {
+		err2 := k.consume(ctx, topicArray, messages)
+		if err2 != nil {
+			log.Errorf("consume failed with error: %v", err2.Error())
+		}
+	}()
 	return nil
 }
 
-func (k *kafka) consume(ctx context.Context, topicArray []string, messages chan<- *queue.Message) (err error) {
+func (k *kafka) consume(
+	ctx context.Context, topicArray []string, messages chan<- *queue.Message,
+) (err error) {
 	log := logger.ContextLog(ctx)
 	for {
 		log.Infof("begin consume topic: %#v", topicArray)
@@ -244,7 +262,8 @@ func (k *kafka) consume(ctx context.Context, topicArray []string, messages chan<
 	}
 }
 
-func (k *kafka) ack(ctx context.Context, ack <-chan *queue.Message) {
+// Ack ack message
+func (k *kafka) Ack(ctx context.Context, ack <-chan *queue.Message) {
 	log := logger.ContextLog(ctx)
 	for {
 		select {
@@ -261,7 +280,9 @@ func (k *kafka) ack(ctx context.Context, ack <-chan *queue.Message) {
 // Producer
 //
 // messages: is the channel of message need to produce.
-func (k *kafka) ProduceTopic(ctx context.Context, topic string, messages <-chan *queue.Message) error {
+func (k *kafka) ProduceTopic(
+	ctx context.Context, topic string, messages <-chan *queue.Message,
+) error {
 	log := logger.ContextLog(ctx)
 	go func() {
 		for {

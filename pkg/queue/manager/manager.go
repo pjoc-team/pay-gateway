@@ -31,7 +31,11 @@ type queueManager struct {
 
 func partition(id string, num int) int {
 	h := fnv.New32a()
-	h.Write([]byte(id))
+	_, err := h.Write([]byte(id))
+	if err != nil{
+		log := logger.Log()
+		log.Fatal(err.Error())
+	}
 	sum32 := int(h.Sum32())
 	if sum32 < 0 {
 		sum32 = -sum32
@@ -285,8 +289,8 @@ func (q *queueManager) Stop(ctx context.Context) error {
 		log.Warnf("begin push least message topic: %v messages: %v", p.topic, len(p.mc))
 		q.pushLeastMessages(ctx, p)
 	}
-	q.queue.Stop(ctx)
-	return nil
+	err := q.queue.Stop(ctx)
+	return err
 }
 
 // pushLeastMessages 推送线程内剩余的消息

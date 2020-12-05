@@ -8,7 +8,8 @@ import (
 	"net/http"
 )
 
-func BuildChannelHttpRequest(ctx context.Context, r *http.Request) (
+// BuildChannelHTTPRequest build callback request
+func BuildChannelHTTPRequest(ctx context.Context, r *http.Request) (
 	request *pb.HTTPRequest, err error,
 ) {
 	log := logger.ContextLog(ctx)
@@ -32,6 +33,7 @@ func BuildChannelHttpRequest(ctx context.Context, r *http.Request) (
 	return
 }
 
+// GetHeader get http header
 func GetHeader(r *http.Request) map[string]string {
 	header := make(map[string]string)
 	for k, v := range r.Header {
@@ -42,24 +44,25 @@ func GetHeader(r *http.Request) map[string]string {
 	return header
 }
 
+// GetBody get http body
 func GetBody(ctx context.Context, r *http.Request) (data []byte, err error) {
 	log := logger.ContextLog(ctx)
 
 	body := r.Body
 	defer func() {
 		err2 := body.Close()
-		if err2 != nil{
+		if err2 != nil {
 			log.Error(err2.Error())
 			err = err2
 		}
 	}()
 	buffer := bytes.Buffer{}
-	if n, err := buffer.ReadFrom(body); err != nil {
+	n, err := buffer.ReadFrom(body)
+	if err != nil {
 		log.Errorf("Failed when read body! error: %v", err.Error())
 		return nil, err
-	} else {
-		log.Debugf("Read byte size: %d", n)
-		return buffer.Bytes(), nil
 	}
+	log.Debugf("Read byte size: %d", n)
+	return buffer.Bytes(), nil
 
 }

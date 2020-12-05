@@ -44,6 +44,7 @@ type MysqlQueue struct {
 	sync.Mutex
 }
 
+// Pull pull message
 func (m *MysqlQueue) Pull(ctx context.Context) (payNotices []*pay.PayNotice, err error) {
 	log := logger.ContextLog(ctx)
 	payNoticeQuery := &pay.PayNotice{}
@@ -52,13 +53,14 @@ func (m *MysqlQueue) Pull(ctx context.Context) (payNotices []*pay.PayNotice, err
 	if err != nil {
 		log.Errorf("Failed to find notify! error: %v", err.Error())
 		return
-	} else {
-		log.Infof("Found notices: %v", response.PayNotices)
 	}
+	log.Infof("Found notices: %v", response.PayNotices)
 	// 更新下一次的更新时间，防止被其他队列拉下来
 	for _, notice := range response.PayNotices {
 		var nextTimeStr string
-		nextTimeStr, err = NextTimeToNotice(notice.GetFailTimes(), m.svc.GatewayConfig.NoticeConfig.NoticeDelaySecondExpressions)
+		nextTimeStr, err = NextTimeToNotice(
+			notice.GetFailTimes(), m.svc.GatewayConfig.NoticeConfig.NoticeDelaySecondExpressions,
+		)
 		if err != nil {
 			log.Errorf("Failed to get next notify time! error: %v", err.Error())
 			notice.NextNotifyTime = ""
@@ -70,14 +72,14 @@ func (m *MysqlQueue) Pull(ctx context.Context) (payNotices []*pay.PayNotice, err
 		if err != nil {
 			log.Errorf("Failed to update notify time! error: %v", notice)
 			return
-		} else {
-			log.Infof("Update notify: %v with result: %v", notice, result)
 		}
+		log.Infof("Update notify: %v with result: %v", notice, result)
 	}
 	payNotices = response.PayNotices
 	return
 }
 
+// Push push message
 func (m *MysqlQueue) Push(ctx context.Context, notice pay.PayNotice) (err error) {
 	log := logger.ContextLog(ctx)
 
@@ -91,10 +93,9 @@ func (m *MysqlQueue) Push(ctx context.Context, notice pay.PayNotice) (err error)
 		if result, err = m.svc.SavePayNotice(ctx, &notice); err != nil {
 			log.Errorf("Failed to save notify! notify: %v error: %v", notice, err.Error())
 			return
-		} else {
-			log.Infof("Save notify: %v result: %v", notice, result)
-			return
 		}
+		log.Infof("Save notify: %v result: %v", notice, result)
+		return
 	}
 	payNotice := response.PayNotices[0]
 	payNotice.NextNotifyTime = date.NowTime()
@@ -102,13 +103,13 @@ func (m *MysqlQueue) Push(ctx context.Context, notice pay.PayNotice) (err error)
 	if result, err = m.svc.UpdatePayNotice(ctx, payNotice); err != nil {
 		log.Errorf("Failed to update notify! notify: %v error: %v", notice, err.Error())
 		return
-	} else {
-		log.Infof("Update notify: %v result: %v", notice, result)
 	}
+	log.Infof("Update notify: %v result: %v", notice, result)
 
 	return
 }
 
+// MessageSerializer serializer
 func (*MysqlQueue) MessageSerializer() MessageSerializer {
-	return NewJsonMessageSerializer()
+	return NewJSONMessageSerializer()
 }

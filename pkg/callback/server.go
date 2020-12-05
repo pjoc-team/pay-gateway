@@ -7,17 +7,17 @@ import (
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
-	"time"
-
 	"net/http"
 )
 
+// NotifyService notify service
 type NotifyService struct {
 	services *discovery.Services
 }
 
+// Notify notify by order id
 func (svc *NotifyService) Notify(
-	ctx context.Context, gatewayOrderId string,
+	ctx context.Context, gatewayOrderID string,
 	r *http.Request,
 ) (notifyResponse *pb.NotifyResponse, e error) {
 	span, ctx := tracing.Start(ctx, "notify")
@@ -32,15 +32,15 @@ func (svc *NotifyService) Notify(
 		return
 	}
 	defer putBackClientFunc()
-	orderQuery := &pb.PayOrder{BasePayOrder: &pb.BasePayOrder{GatewayOrderId: gatewayOrderId}}
+	orderQuery := &pb.PayOrder{BasePayOrder: &pb.BasePayOrder{GatewayOrderId: gatewayOrderID}}
 	var existOrder *pb.PayOrder
 	if response, err := dbService.FindPayOrder(ctx, orderQuery); err != nil {
 		e = err
-		log.Errorf("Failed to find order! error: %v order: %v", err.Error(), gatewayOrderId)
+		log.Errorf("Failed to find order! error: %v order: %v", err.Error(), gatewayOrderID)
 		return
 	} else if response.PayOrders == nil || len(response.PayOrders) == 0 {
-		log.Errorf("Not found order! order: %v", gatewayOrderId)
-		e = fmt.Errorf("not found order: %v", gatewayOrderId)
+		log.Errorf("Not found order! order: %v", gatewayOrderID)
+		e = fmt.Errorf("not found order: %v", gatewayOrderID)
 		return
 	} else {
 		existOrder = response.PayOrders[0]
@@ -64,33 +64,33 @@ func (svc *NotifyService) Notify(
 	if e != nil {
 		log.Errorf("Failed to settle order: %v error: %v", existOrder, e.Error())
 		return
-	} else {
-		log.Infof("Notify order with result: %v", settlementResponse)
 	}
+	log.Infof("Notify order with result: %v", settlementResponse)
 	return
 }
 
+// ProcessChannel process channel's callback
 func (svc *NotifyService) ProcessChannel(
 	ctx context.Context, existOrder *pb.PayOrder,
 	r *http.Request,
 ) (notifyResponse *pb.NotifyResponse, e error) {
 	log := logger.ContextLog(ctx)
 
-	channelId := existOrder.BasePayOrder.ChannelId
+	channelID := existOrder.BasePayOrder.ChannelId
 	channelAccount := existOrder.BasePayOrder.ChannelAccount
 
 	// send to channel client
 	var client pb.PayChannelClient
 	var pubBackClientFunc discovery.PutBackClientFunc
-	if client, pubBackClientFunc, e = svc.services.GetChannelClient(ctx, channelId); e != nil {
-		log.Errorf("Failed to get channel client of channelId: %v! error: %v", channelId, e.Error())
+	if client, pubBackClientFunc, e = svc.services.GetChannelClient(ctx, channelID); e != nil {
+		log.Errorf("Failed to get channel client of channelID: %v! error: %v", channelID, e.Error())
 		return
 	}
 	if pubBackClientFunc != nil {
 		defer pubBackClientFunc()
 	}
 	var request *pb.HTTPRequest
-	if request, e = BuildChannelHttpRequest(ctx, r); e != nil {
+	if request, e = BuildChannelHTTPRequest(ctx, r); e != nil {
 		log.Errorf("Failed to build notify request! error: %v", e.Error())
 		return
 	}
@@ -99,16 +99,15 @@ func (svc *NotifyService) ProcessChannel(
 		Method: existOrder.BasePayOrder.Method,
 	}
 
-	timeoutChannel, _ := context.WithTimeout(context.TODO(), 10*time.Second)
-	if notifyResponse, e = client.Notify(timeoutChannel, notifyRequest); e != nil {
+	if notifyResponse, e = client.Notify(ctx, notifyRequest); e != nil {
 		log.Errorf("Failed to notify channel! order: %v error: %v", existOrder, e.Error())
 		return
-	} else {
-		log.Infof("Notify to channel: %v with result: %v", channelId, notifyResponse)
 	}
+	log.Infof("Notify to channel: %v with result: %v", channelID, notifyResponse)
 	return
 }
 
+// Init init notify service
 func Init(services *discovery.Services) *NotifyService {
 	notify := &NotifyService{}
 	notify.services = services

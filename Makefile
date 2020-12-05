@@ -1,4 +1,6 @@
-.DEFAULT: golint_by_docker golangci_lint_by_docker
+.DEFAULT: all
+
+all: golint_by_docker golangci_lint_by_docker build
 
 golangci_lint:
 	bash scripts/golangci_lint.sh

@@ -8,19 +8,24 @@ import (
 	"time"
 )
 
+// Scheduler scheduler
 type Scheduler struct {
-	ctx context.Context
-	queue         Queue              `json:"-" yaml:"-"`
-	QueueConfig   *QueueConfig       `json:"queue_config" yaml:"QueueConfig"`
-	NotifyCh      chan pay.PayNotice `json:"-" yaml:"-"`
-	done          chan bool          `json:"-" yaml:"-"`
-	stopped       bool               `json:"-" yaml:"-"`
-	notifyService *Service           `json:"-" yaml:"-"`
-	Concurrency   int                `json:"concurrency" yaml:"Concurrency"`
+	ctx         context.Context
+	QueueConfig *QueueConfig       `json:"queue_config" yaml:"QueueConfig"`
+	NotifyCh    chan pay.PayNotice `json:"-" yaml:"-"`
+	Concurrency int                `json:"concurrency" yaml:"Concurrency"`
+
+	queue         Queue
+	done          chan bool
+	stopped       bool
+	notifyService *Service
 }
 
-func InitScheduler(ctx context.Context, config *QueueConfig, concurrency int,
-	noticeService *Service) (scheduler *Scheduler, err error) {
+// InitScheduler init scheduler
+func InitScheduler(
+	ctx context.Context, config *QueueConfig, concurrency int,
+	noticeService *Service,
+) (scheduler *Scheduler, err error) {
 	log := logger.Log()
 
 	queue, err := InstanceQueue(*config, noticeService)
@@ -42,11 +47,13 @@ func InitScheduler(ctx context.Context, config *QueueConfig, concurrency int,
 	return
 }
 
+// Start start server
 func (s *Scheduler) Start(ctx context.Context) {
 	go s.startConsumer(ctx)
 	go s.startNotice(ctx)
 }
 
+// Stop stop server
 func (s *Scheduler) Stop() {
 	s.stopped = true
 	s.done <- true

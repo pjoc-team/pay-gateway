@@ -12,7 +12,7 @@ import (
 const Type = "memory"
 
 func init() {
-	log := logger.ContextLog(nil)
+	log := logger.Log()
 
 	err := queue.Register(Type, func(config interface{}) (queue.Interface, error) {
 		return &q{
@@ -26,12 +26,13 @@ func init() {
 
 type q struct {
 	topicAndMessage map[string]chan *queue.Message
-	sync.Mutex
+	locker sync.Mutex
 }
 
-func (q q) ConsumeTopics(ctx context.Context, topics string, messages chan<- *queue.Message) (err error) {
-	q.Lock()
-	defer q.Unlock()
+func (q *q) ConsumeTopics(ctx context.Context, topics string,
+	messages chan<- *queue.Message) (err error) {
+	q.locker.Lock()
+	defer q.locker.Unlock()
 	log := logger.ContextLog(ctx)
 
 	topicArray := queue.ParseBrokers(topics)
@@ -56,7 +57,7 @@ func (q q) ConsumeTopics(ctx context.Context, topics string, messages chan<- *qu
 	return nil
 }
 
-func (q q) Push(ctx context.Context, topic string, message *queue.Message) (err error) {
+func (q *q) Push(ctx context.Context, topic string, message *queue.Message) (err error) {
 	mc, ok := q.topicAndMessage[topic]
 	if !ok {
 		mc = make(chan *queue.Message, 1024)
@@ -69,7 +70,8 @@ func (q q) Push(ctx context.Context, topic string, message *queue.Message) (err 
 	return
 }
 
-func (q *q) ack(ctx context.Context, ack <-chan *queue.Message) {
+// Ack ack message
+func (q *q) Ack(ctx context.Context, ack <-chan *queue.Message) {
 	log := logger.ContextLog(ctx)
 
 	select {
@@ -84,8 +86,8 @@ func (q *q) ack(ctx context.Context, ack <-chan *queue.Message) {
 }
 
 func (q *q) ProduceTopic(ctx context.Context, topic string, messages <-chan *queue.Message) (err error) {
-	q.Lock()
-	defer q.Unlock()
+	q.locker.Lock()
+	defer q.locker.Unlock()
 	log := logger.ContextLog(ctx)
 
 	message, ok := q.topicAndMessage[topic]

@@ -25,7 +25,7 @@ type Config struct {
 
 // GetQueue 从队列配置初始化queue
 func (c *Config) GetQueue() (Interface, error) {
-	log := logger.ContextLog(nil)
+	log := logger.Log()
 
 	info, err := GetQueue(c.Type)
 	if err != nil {

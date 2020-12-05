@@ -2,13 +2,12 @@ package main
 
 import "fmt"
 
-// A demo struct
-type A struct {
-	kv map[string]string
-}
-
 
 func main() {
+	// A demo struct
+	type A struct {
+		kv map[string]string
+	}
 	a := &A{}
 	fmt.Println(a.kv["aaa"])
 	if a.kv == nil {

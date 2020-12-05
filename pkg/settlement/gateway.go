@@ -22,17 +22,17 @@ type service struct {
 	scheduler      *notify.Scheduler
 }
 
-func (svc *service) SendNotice(ctx context.Context, notice *pb.PayNotice) (
+func (svc *service) SendNotify(ctx context.Context, notify *pb.PayNotice) (
 	result *pb.ReturnResult, err error,
 ) {
 	log := logger.ContextLog(ctx)
-	if notice == nil {
-		err = errors.New("notice is nil")
+	if notify == nil {
+		err = errors.New("notify is nil")
 		return
 	}
-	err = svc.notifyService.Notice(notice)
+	err = svc.notifyService.Notify(ctx, notify)
 	if err != nil {
-		log.Errorf("Failed to send notice! error: %v", err.Error())
+		log.Errorf("Failed to send notify! error: %v", err.Error())
 		return
 	}
 
@@ -84,7 +84,7 @@ func (svc *service) NotifyOrder(
 		log.Errorf(err.Error())
 		return
 	}
-	returnResult, err := svc.SendNotice(ctx, payNotice)
+	returnResult, err := svc.SendNotify(ctx, payNotice)
 	if err != nil {
 		log.Errorf("Failed to save payNotice: %v", payNotice)
 		return
@@ -102,14 +102,14 @@ func (svc *service) ProcessOrderSuccess(
 	ctx context.Context, settlementPayOrder *pb.SettlementPayOrder,
 ) (response *pb.SettlementResponse, err error) {
 	log := logger.ContextLog(ctx)
+	response = &pb.SettlementResponse{}
 	dbClient, pubBackClientFunc, err := svc.services.GetDatabaseService(ctx)
 	if err != nil {
 		log.Errorf("Failed to get db client! error: %v", err.Error())
 		return
 	}
 	defer pubBackClientFunc()
-	timeoutCtx, _ := context.WithTimeout(ctx, 6*time.Second)
-	orderResponse, err := dbClient.FindPayOrder(timeoutCtx, settlementPayOrder.Order)
+	orderResponse, err := dbClient.FindPayOrder(ctx, settlementPayOrder.Order)
 	if err != nil {
 		log.Errorf(
 			"Failed to find order: %v", settlementPayOrder.Order.BasePayOrder.GatewayOrderId,
@@ -125,11 +125,10 @@ func (svc *service) ProcessOrderSuccess(
 
 	sendStatus := constant.NotifyFailed
 	// save to order ok
-	timeoutSaveCtx, _ := context.WithTimeout(ctx, 6*time.Second)
-	orderOk := svc.GenerateSuccessOrder(existsOrder)
+	orderOk, _ := svc.GenerateSuccessOrder(ctx, existsOrder)
 	orderOk.SendNoticeStats = sendStatus
 
-	result, e := dbClient.SavePayOrderOk(timeoutSaveCtx, orderOk)
+	result, e := dbClient.SavePayOrderOk(ctx, orderOk)
 	if e != nil {
 		log.Errorf("Failed to save order ok!")
 		return
@@ -140,14 +139,12 @@ func (svc *service) ProcessOrderSuccess(
 	}
 
 	// notify
-	timeoutNotifyCtx, _ := context.WithTimeout(ctx, 6*time.Second)
-	settlementResponse, err := svc.NotifyOrder(timeoutNotifyCtx, settlementPayOrder)
+	settlementResponse, err := svc.NotifyOrder(ctx, settlementPayOrder)
 	if err != nil {
 		log.Errorf(
 			"Failed to notify order! error: %v order: %v", err.Error(), settlementPayOrder,
 		)
-		sendStatus = constant.NotifyFailed
-		return
+		return nil, err
 	} else if settlementResponse.Result != nil && settlementResponse.Result.Code != pb.ReturnResultCode_CODE_SUCCESS {
 		err = fmt.Errorf("failed to notify order! message: %v", settlementResponse.Result)
 		log.Errorf(err.Error())
@@ -155,35 +152,36 @@ func (svc *service) ProcessOrderSuccess(
 	}
 	sendStatus = constant.NotifySuccess
 	orderOk.SendNoticeStats = sendStatus
-	timeoutUpdateCtx, _ := context.WithTimeout(ctx, 6*time.Second)
-	result, err = dbClient.UpdatePayOrderOk(timeoutUpdateCtx, orderOk)
+	result, err = dbClient.UpdatePayOrderOk(ctx, orderOk)
 	if err != nil {
 		log.Errorf("Failed to update order ok! order: %v error: %v", orderOk, err.Error())
+		response.Result = result
 		return
 	}
 
-	response = &pb.SettlementResponse{}
 	response.Result = &pb.ReturnResult{Code: pb.ReturnResultCode_CODE_SUCCESS}
 	return response, nil
 }
 
+// ProcessSuccess process success order
 func (svc *service) ProcessSuccess(
 	ctx context.Context, request *pb.SettlementRequest,
 ) (*pb.SettlementResponse, error) {
-	gatewayOrderId := request.GatewayOrderId
-	order := &pb.PayOrder{BasePayOrder: &pb.BasePayOrder{GatewayOrderId: gatewayOrderId}}
+	gatewayOrderID := request.GatewayOrderId
+	order := &pb.PayOrder{BasePayOrder: &pb.BasePayOrder{GatewayOrderId: gatewayOrderID}}
 	settlementPayOrder := &pb.SettlementPayOrder{Order: order}
 	return svc.ProcessOrderSuccess(ctx, settlementPayOrder)
 }
 
+// New create settlement gateway
 func New(
 	services *discovery.Services, scheduler *notify.Scheduler, cc configclient.ConfigClients,
 	notifyService *notify.Service,
-) *service {
+) (pb.SettlementGatewayServer, error) {
 	s := &service{}
 	s.services = services
 	s.notifyService = notifyService
 	s.config = cc
 	s.scheduler = scheduler
-	return s
+	return s, nil
 }

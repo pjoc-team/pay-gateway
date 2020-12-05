@@ -7,7 +7,7 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	_ "github.com/pjoc-team/pay-gateway/pkg/config/file"
+	_ "github.com/pjoc-team/pay-gateway/pkg/config/file"	// import config backend file
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/metadata"
 	"github.com/pjoc-team/pay-gateway/pkg/util/network"
@@ -25,7 +25,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" // import pprof
 	"os"
 	"os/signal"
 	"strings"
@@ -42,10 +42,10 @@ import (
 // )
 
 const (
-	// DefaultHttpPort default http port
-	DefaultHttpPort = 8080
-	// DefaultInternalHttpPort default internal http port
-	DefaultInternalHttpPort = 8081
+	// DefaultHTTPPort default http port
+	DefaultHTTPPort = 8080
+	// DefaultInternalHTTPPort default internal http port
+	DefaultInternalHTTPPort = 8081
 	// DefaultGRPCPort default grpc port
 	DefaultGRPCPort = 9090
 	// DefaultPPROFPort default pprof port
@@ -86,6 +86,7 @@ func (o *options) apply(options ...Option) {
 	}
 }
 
+// Option service option
 type Option interface {
 	apply(opts *options)
 }
@@ -97,6 +98,7 @@ func (o OptionFunc) apply(opts *options) {
 	o(opts)
 }
 
+// ShutdownFunction shutdown func
 type ShutdownFunction func(ctx context.Context)
 
 // WithShutdown 增加关闭函数
@@ -132,6 +134,7 @@ func WithFlagSet(flagSet *pflag.FlagSet) Option {
 //	}
 // }
 
+// NewServer create server
 func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 	log := logger.Log()
 	err2 := logger.MinReportCallerLevel(logger.DebugLevel)
@@ -164,7 +167,8 @@ func wordSepNormalizeFunc(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	return pflag.NormalizedName(name)
 }
 
-func (s *Server) GetServices() *discovery.Services {
+// GetDiscoveryServices get discovery services
+func (s *Server) GetDiscoveryServices() *discovery.Services {
 	return s.services
 }
 
@@ -189,9 +193,9 @@ func (s *Server) flags() *pflag.FlagSet {
 	flagSet := pflag.NewFlagSet("service", pflag.PanicOnError)
 	flagSet.SetNormalizeFunc(wordSepNormalizeFunc)
 	flagSet.IntVar(&s.o.listen, "listen", DefaultGRPCPort, "listen of the gRPC service")
-	flagSet.IntVar(&s.o.listenHTTP, "listen-http", DefaultHttpPort, "listen of the http service")
+	flagSet.IntVar(&s.o.listenHTTP, "listen-http", DefaultHTTPPort, "listen of the http service")
 	flagSet.IntVar(
-		&s.o.listenInternal, "listen-internal", DefaultInternalHttpPort,
+		&s.o.listenInternal, "listen-internal", DefaultInternalHTTPPort,
 		"listen of the internal http service",
 	)
 	flagSet.IntVar(
@@ -211,6 +215,7 @@ func (s *Server) flags() *pflag.FlagSet {
 	return flagSet
 }
 
+// Start start server
 func (s *Server) Start(opts ...Option) {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	s.o.apply(opts...)
@@ -350,6 +355,7 @@ func (s *Server) run() {
 	}
 }
 
+// InitLoggerAndTracing init logger and tracing
 func (s *Server) InitLoggerAndTracing(serviceName string) {
 	// setting logger
 	log := logger.Log()
@@ -396,7 +402,7 @@ func (s *Server) initGrpc() error {
 		return err
 	}
 
-	*s.services = *services
+	s.services = services
 
 	ip, err := network.GetHostIP()
 	if err != nil {

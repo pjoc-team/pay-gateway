@@ -7,22 +7,26 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 )
 
-type JsonMessageSerializer struct {
+// JSONMessageSerializer json serializer
+type JSONMessageSerializer struct {
 }
 
-func NewJsonMessageSerializer() *JsonMessageSerializer{
-	return &JsonMessageSerializer{}
+// NewJSONMessageSerializer create json serializer
+func NewJSONMessageSerializer() *JSONMessageSerializer {
+	return &JSONMessageSerializer{}
 }
 
-func (*JsonMessageSerializer) Serialize(notice pay.PayNotice) (string, error) {
-	if bytes, e := json.Marshal(notice); e != nil {
+// Serialize serialize
+func (*JSONMessageSerializer) Serialize(notice pay.PayNotice) (string, error) {
+	bytes, e := json.Marshal(notice)
+	if e != nil {
 		return "", e
-	} else {
-		return string(bytes), e
 	}
+	return string(bytes), nil
 }
 
-func (*JsonMessageSerializer) Deserialize(str string) (notice *pay.PayNotice, err error) {
+// Deserialize deserialize
+func (*JSONMessageSerializer) Deserialize(str string) (notice *pay.PayNotice, err error) {
 	log := logger.Log()
 
 	if str == "" {

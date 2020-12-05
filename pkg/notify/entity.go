@@ -21,9 +21,9 @@ type Body struct {
 	// 币种
 	Currency string `json:"currency,omitempty" form:"currency"`
 	// 支付后跳转的前端地址
-	ReturnUrl string `json:"return_url,omitempty" form:"return_url"`
+	ReturnURL string `json:"return_url,omitempty" form:"return_url"`
 	// 系统给商户分配的app_id
-	AppId string `json:"app_id,omitempty" form:"app_id"`
+	AppID string `json:"app_id,omitempty" form:"app_id"`
 	// 加密方法，RSA和MD5，默认RSA
 	SignType string `json:"sign_type,omitempty" form:"sign_type"`
 	// 签名
@@ -31,13 +31,13 @@ type Body struct {
 	// 业务方下单时间，时间格式: 年年年年-月月-日日 时时:分分:秒秒，例如: 2006-01-02 15:04:05
 	OrderTime string `json:"order_time,omitempty" form:"order_time"`
 	// 发起支付的用户ip
-	UserIp string `json:"user_ip,omitempty" form:"user_ip"`
+	UserIP string `json:"user_ip,omitempty" form:"user_ip"`
 	// 用户在业务系统的id
-	UserId string `json:"user_id,omitempty" form:"user_id"`
+	UserID string `json:"user_id,omitempty" form:"user_id"`
 	// 支付者账号，可选
 	PayerAccount string `json:"payer_account,omitempty" form:"payer_account"`
 	// 业务系统的产品id
-	ProductId string `json:"product_id,omitempty" form:"product_id"`
+	ProductID string `json:"product_id,omitempty" form:"product_id"`
 	// 商品名称
 	ProductName string `json:"product_name,omitempty" form:"product_name"`
 	// 商品描述
@@ -45,11 +45,11 @@ type Body struct {
 	// 参数编码，只允许utf-8编码；签名时一定要使用该编码获取字节然后再进行签名
 	Charset string `json:"charset,omitempty" form:"charset"`
 	// 回调业务系统时需要带上的字符串
-	CallbackJson string `json:"callback_json,omitempty" form:"callback_json"`
+	CallbackJSON string `json:"callback_json,omitempty" form:"callback_json"`
 	// 扩展json
-	ExtJson string `json:"ext_json,omitempty" form:"ext_json"`
+	ExtJSON string `json:"ext_json,omitempty" form:"ext_json"`
 	// 渠道id（非必须），如果未指定method，系统会根据method来找到可用的channel_id
-	ChannelId string `json:"channel_id,omitempty" form:"channel_id"`
+	ChannelID string `json:"channel_id,omitempty" form:"channel_id"`
 	// 例如：二维码支付，银联支付等。
 	Method string `json:"method,omitempty" form:"method"`
 	// 实际金额
@@ -58,17 +58,17 @@ type Body struct {
 	FareAmt uint32 `json:"fare_amt,omitempty" form:"fare_amt"`
 }
 
-// UrlGenerator generate notify url
-type UrlGenerator struct {
+// URLGenerator generate notify url
+type URLGenerator struct {
 	// validator.paramsCompacter = sign.NewParamsCompacter(&pay.PayRequest{}, "json", []string{"sign"}, true, "&", "=")
 	paramsCompacter sign.ParamsCompacter
 	config          configclient.ConfigClients
 	encoder         *form.Encoder
 }
 
-// NewUrlGenerator create url generator
-func NewUrlGenerator(config configclient.ConfigClients) *UrlGenerator {
-	generator := &UrlGenerator{}
+// NewURLGenerator create url generator
+func NewURLGenerator(config configclient.ConfigClients) *URLGenerator {
+	generator := &URLGenerator{}
 	generator.paramsCompacter = sign.NewParamsCompacter(
 		&Body{}, "json", []string{"sign"}, true, "&", "=",
 	)
@@ -78,12 +78,12 @@ func NewUrlGenerator(config configclient.ConfigClients) *UrlGenerator {
 }
 
 // GenerateSign generate sign
-func (g *UrlGenerator) GenerateSign(ctx context.Context, body *Body) (str string, err error) {
+func (g *URLGenerator) GenerateSign(ctx context.Context, body *Body) (str string, err error) {
 	log := logger.Log()
 
-	appConfig, err := g.config.GetAppConfig(ctx, body.AppId)
+	appConfig, err := g.config.GetAppConfig(ctx, body.AppID)
 	if err != nil {
-		log.Errorf("failed to get config: %v error: %v", body.AppId, err.Error())
+		log.Errorf("failed to get config: %v error: %v", body.AppID, err.Error())
 		return "", err
 	}
 
@@ -94,7 +94,7 @@ func (g *UrlGenerator) GenerateSign(ctx context.Context, body *Body) (str string
 }
 
 // GenerateSignByPayOrderOk sign by ok order
-func (g *UrlGenerator) GenerateSignByPayOrderOk(
+func (g *URLGenerator) GenerateSignByPayOrderOk(
 	ctx context.Context, payOrderOk pay.PayOrderOk,
 ) (str string, err error) {
 	log := logger.ContextLog(ctx)
@@ -107,8 +107,8 @@ func (g *UrlGenerator) GenerateSignByPayOrderOk(
 	return g.GenerateSign(ctx, body)
 }
 
-// GenerateUrlByPayOrderOk generate url by ok order
-func (g *UrlGenerator) GenerateUrlByPayOrderOk(
+// GenerateURLByPayOrderOk generate url by ok order
+func (g *URLGenerator) GenerateURLByPayOrderOk(
 	ctx context.Context, payOrderOk pay.PayOrderOk,
 ) (url string, form url.Values, err error) {
 	log := logger.ContextLog(ctx)

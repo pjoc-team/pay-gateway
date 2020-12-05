@@ -17,7 +17,7 @@ type RegisterGrpcFunc func(ctx context.Context, server *grpc.Server) error
 // RegisterGatewayFunc 注册gatway函数
 type RegisterGatewayFunc func(ctx context.Context, mux *runtime.ServeMux) error
 
-// RegisterGrpc 注册grpc服务的函数。请在该函数被调用时注册自己的grpc服务。
+// GrpcInfo 注册grpc服务的函数。请在该函数被调用时注册自己的grpc服务。
 // 在服务启动时，会调用所有该类型函数。
 type GrpcInfo struct {
 	RegisterGrpcFunc    RegisterGrpcFunc
