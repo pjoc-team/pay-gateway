@@ -18,7 +18,7 @@ type service struct {
 	config         configclient.ConfigClients
 	OrderGenerator *generator.Generator
 	services       *discovery.Services
-	notifyService  *notify.NotifyService
+	notifyService  *notify.Service
 	scheduler      *notify.Scheduler
 }
 
@@ -178,7 +178,7 @@ func (svc *service) ProcessSuccess(
 
 func New(
 	services *discovery.Services, scheduler *notify.Scheduler, cc configclient.ConfigClients,
-	notifyService *notify.NotifyService,
+	notifyService *notify.Service,
 ) *service {
 	s := &service{}
 	s.services = services

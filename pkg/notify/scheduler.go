@@ -11,14 +11,14 @@ import (
 type Scheduler struct {
 	queue         Queue              `json:"-" yaml:"-"`
 	QueueConfig   *QueueConfig       `json:"queue_config" yaml:"QueueConfig"`
-	NoticeCh      chan pay.PayNotice `json:"-" yaml:"-"`
+	NotifyCh      chan pay.PayNotice `json:"-" yaml:"-"`
 	done          chan bool          `json:"-" yaml:"-"`
 	stopped       bool               `json:"-" yaml:"-"`
-	noticeService *NotifyService     `json:"-" yaml:"-"`
+	notifyService *Service           `json:"-" yaml:"-"`
 	Concurrency   int                `json:"concurrency" yaml:"Concurrency"`
 }
 
-func InitScheduler(config *QueueConfig, concurrency int, noticeService *NotifyService) (scheduler *Scheduler, err error) {
+func InitScheduler(config *QueueConfig, concurrency int, noticeService *Service) (scheduler *Scheduler, err error) {
 	log := logger.Log()
 
 	queue, err := InstanceQueue(*config, noticeService)
@@ -27,12 +27,12 @@ func InitScheduler(config *QueueConfig, concurrency int, noticeService *NotifySe
 	}
 
 	scheduler = &Scheduler{}
-	scheduler.NoticeCh = make(chan pay.PayNotice, concurrency)
+	scheduler.NotifyCh = make(chan pay.PayNotice, concurrency)
 	scheduler.done = make(chan bool, 1)
 	scheduler.queue = queue
 	log.Infof("InitScheduler... queue: %v", queue)
 	log.Infof("InitScheduler... scheduler.queue: %v", scheduler.queue)
-	scheduler.noticeService = noticeService
+	scheduler.notifyService = noticeService
 	scheduler.stopped = false
 	scheduler.Concurrency = concurrency
 	scheduler.QueueConfig = config
@@ -64,7 +64,7 @@ func (s *Scheduler) startConsumer() {
 			log.Infof("Pulled notices: %v", notices)
 		}
 		for _, notice := range notices {
-			s.NoticeCh <- *notice
+			s.NotifyCh <- *notice
 		}
 	}
 }
@@ -78,7 +78,7 @@ func (s *Scheduler) startNotice() {
 func (s *Scheduler) startThreads() {
 	for !s.stopped {
 		select {
-		case notice := <-s.NoticeCh:
+		case notice := <-s.NotifyCh:
 			s.notice(&notice)
 		}
 	}
@@ -91,10 +91,10 @@ func (s *Scheduler) notice(payNotice *pay.PayNotice) {
 	ctx, cancel := context.WithTimeout(context.Background(),
 		5 * time.Second)// TODO timeout from config
 	defer cancel()
-	err := s.noticeService.SendPayNotice(ctx, payNotice)
+	err := s.notifyService.SendPayNotice(ctx, payNotice)
 	if err != nil {
 		log.Errorf("Failed to send notice! order: %v error: %v", payNotice, err.Error())
-		err = s.noticeService.UpdatePayNoticeFail(payNotice, err)
+		err = s.notifyService.UpdatePayNoticeFail(payNotice, err)
 		if err != nil {
 			log.Errorf("Failed to update db! notice: %v error: %v", payNotice, err.Error())
 		} else {
@@ -102,7 +102,7 @@ func (s *Scheduler) notice(payNotice *pay.PayNotice) {
 		}
 		return
 	}
-	err = s.noticeService.UpdatePayNoticeSuccess(payNotice)
+	err = s.notifyService.UpdatePayNoticeSuccess(payNotice)
 	if err != nil {
 		log.Errorf("Failed to update notice ok! notice: %v error: %v", payNotice, err.Error())
 	}

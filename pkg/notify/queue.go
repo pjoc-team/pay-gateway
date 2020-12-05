@@ -28,7 +28,7 @@ var queueConfigMap = make(map[string]interface{})
 var queueTypeAndInitializeFuncMap = make(map[string]QueueInitializeFunc)
 var queueTypeAndQueueMap = make(map[string]Queue)
 
-type QueueInitializeFunc = func(QueueConfig, interface{}, *NotifyService) (Queue, error)
+type QueueInitializeFunc = func(QueueConfig, interface{}, *Service) (Queue, error)
 
 func RegisterQueueType(queueType string, configValue interface{}, initializeFunc QueueInitializeFunc) {
 	queueConfigMap[queueType] = configValue
@@ -43,7 +43,7 @@ func GetQueues() []Queue {
 	return queues
 }
 
-func InstanceQueue(config QueueConfig, svc *NotifyService) (queue Queue, err error) {
+func InstanceQueue(config QueueConfig, svc *Service) (queue Queue, err error) {
 	log := logger.Log()
 	
 	queueType := config.QueueType

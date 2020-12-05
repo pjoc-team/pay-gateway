@@ -18,8 +18,7 @@ func (svc *service) GenerateSuccessOrder(order *pb.PayOrder) *pb.PayOrderOk {
 	return orderOk
 }
 
-func (svc *service) findMerchantConfig(order *pb.PayOrder) *configclient.
-	AppIDChannelConfig {
+func (svc *service) findMerchantConfig(order *pb.PayOrder) *configclient.AppIDChannelConfig {
 	configMap := *svc.AppIdAndChannelConfigMap
 	if configMap == nil {
 		return nil

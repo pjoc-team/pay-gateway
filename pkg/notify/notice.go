@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jinzhu/copier"
+	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/constant"
 	"github.com/pjoc-team/pay-gateway/pkg/date"
 	"github.com/pjoc-team/pay-gateway/pkg/model"
@@ -14,11 +15,13 @@ import (
 	"time"
 )
 
-const SUCCESS_RESPONSE = "success"
+// SuccessResponse return ok
+const SuccessResponse = "success"
 
-var DEFAULT_NOTICE_EXPRESSIONG = []int{30, 30, 120, 240, 480, 1200, 3600, 7200, 43200, 86400, 172800}
+// DefaultNotifyExpression notify expression
+var DefaultNotifyExpression = []int{30, 30, 120, 240, 480, 1200, 3600, 7200, 43200, 86400, 172800}
 
-type NotifyService struct {
+type Service struct {
 	pb.PayDatabaseServiceClient
 	GatewayConfig *model.GatewayConfig
 	UrlGenerator  *UrlGenerator
@@ -26,10 +29,10 @@ type NotifyService struct {
 }
 
 func NewNoticeService(config QueueConfig, dbClient pb.PayDatabaseServiceClient,
-	gatewayConfig *model.GatewayConfig) (noticeService *NotifyService, err error) {
+	gatewayConfig *model.GatewayConfig, clients configclient.ConfigClients) (noticeService *Service, err error) {
 	log := logger.Log()
 
-	noticeService = &NotifyService{}
+	noticeService = &Service{}
 	var queue Queue
 	queue, err = InstanceQueue(config, noticeService)
 	if err != nil {
@@ -39,11 +42,11 @@ func NewNoticeService(config QueueConfig, dbClient pb.PayDatabaseServiceClient,
 	noticeService.NoticeQueue = queue
 	noticeService.GatewayConfig = gatewayConfig
 	noticeService.PayDatabaseServiceClient = dbClient
-	noticeService.UrlGenerator = NewUrlGenerator(*gatewayConfig)
+	noticeService.UrlGenerator = NewUrlGenerator(clients)
 	return
 }
 
-func (svc *NotifyService) Notice(notice *pb.PayNotice) error {
+func (svc *Service) Notice(notice *pb.PayNotice) error {
 	log := logger.Log()
 
 	err := svc.NoticeQueue.Push(*notice)
@@ -53,23 +56,23 @@ func (svc *NotifyService) Notice(notice *pb.PayNotice) error {
 	return err
 }
 
-func (svc *NotifyService) GeneratePayNotice(order *pb.PayOrder) *pb.PayNotice {
+func (svc *Service) GeneratePayNotice(order *pb.PayOrder) *pb.PayNotice {
 	notice := &pb.PayNotice{}
 
 	baseOrder := order.BasePayOrder
 	notice.GatewayOrderId = baseOrder.GatewayOrderId
-	notice.Status = constant.ORDER_STATUS_WAITING
+	notice.Status = constant.OrderStatusWaiting
 	notice.CreateDate = date.NowDate()
 	notice.NextNotifyTime = date.NowTime()
 
 	return notice
 }
 
-func (svc *NotifyService) UpdatePayNoticeSuccess(notice *pb.PayNotice) (err error) {
+func (svc *Service) UpdatePayNoticeSuccess(notice *pb.PayNotice) (err error) {
 	log := logger.Log()
 
 	notice.NoticeTime = date.NowTime()
-	notice.Status = constant.ORDER_STATUS_SUCCESS
+	notice.Status = constant.OrderStatusSuccess
 	notice.NoticeTime = date.NowTime()
 
 	timeoutCtx, _ := context.WithTimeout(context.TODO(), 6*time.Second)
@@ -91,11 +94,11 @@ func (svc *NotifyService) UpdatePayNoticeSuccess(notice *pb.PayNotice) (err erro
 	return
 }
 
-func (svc *NotifyService) UpdatePayNoticeFail(notice *pb.PayNotice, reason error) (err error) {
+func (svc *Service) UpdatePayNoticeFail(notice *pb.PayNotice, reason error) (err error) {
 	log := logger.Log()
-	notice.Status = constant.ORDER_STATUS_FAILED
+	notice.Status = constant.OrderStatusFailed
 	notice.ErrorMessage = reason.Error()
-	noticeExpression := DEFAULT_NOTICE_EXPRESSIONG
+	noticeExpression := DefaultNotifyExpression
 	if svc.GatewayConfig.NoticeConfig != nil && svc.GatewayConfig.NoticeConfig.NoticeDelaySecondExpressions != nil {
 		noticeExpression = svc.GatewayConfig.NoticeConfig.NoticeDelaySecondExpressions
 	}
@@ -119,7 +122,7 @@ func (svc *NotifyService) UpdatePayNoticeFail(notice *pb.PayNotice, reason error
 }
 
 // 发送通知
-func (svc *NotifyService) SendPayNotice(ctx context.Context, notice *pb.PayNotice) (err error) {
+func (svc *Service) SendPayNotice(ctx context.Context, notice *pb.PayNotice) (err error) {
 	log := logger.Log()
 
 	payOrderOkQuery := &pb.PayOrderOk{}
@@ -167,8 +170,9 @@ func (svc *NotifyService) SendPayNotice(ctx context.Context, notice *pb.PayNotic
 	}
 
 	responseString := string(bytes)
-	if responseString != SUCCESS_RESPONSE {
-		err = fmt.Errorf("failed to notify! response is not expect value: %v factul is: %v", SUCCESS_RESPONSE, responseString)
+	if responseString != SuccessResponse {
+		err = fmt.Errorf("failed to notify! response is not expect value: %v factul is: %v",
+			SuccessResponse, responseString)
 		// Save notice when fail!
 		svc.UpdatePayNoticeFail(notice, err)
 	}
@@ -182,6 +186,6 @@ func NextTimeToNotice(failedTimes uint32, config []int) (nextTimeStr string, err
 	}
 	delay := config[failedTimes]
 	nextTime := time.Now().Add(time.Duration(delay) * time.Second)
-	nextTimeStr = nextTime.Format(date.TIME_FORMAT)
+	nextTimeStr = nextTime.Format(date.TimeFormat)
 	return
 }
