@@ -2,13 +2,13 @@ package settlement
 
 import (
 	"github.com/jinzhu/copier"
-	"gitlab.com/pjoc/base-service/pkg/service/model"
-	pb "gitlab.com/pjoc/proto/go"
+	"github.com/pjoc-team/pay-gateway/pkg/configclient"
+	pb "github.com/pjoc-team/pay-proto/go"
 	"math"
 	"math/big"
 )
 
-func (svc *SettlementGatewayService) GenerateSuccessOrder(order *pb.PayOrder) *pb.PayOrderOk {
+func (svc *service) GenerateSuccessOrder(order *pb.PayOrder) *pb.PayOrderOk {
 	orderOk := &pb.PayOrderOk{}
 	copier.Copy(orderOk, order)
 	if config := svc.findMerchantConfig(order); config == nil {
@@ -18,9 +18,9 @@ func (svc *SettlementGatewayService) GenerateSuccessOrder(order *pb.PayOrder) *p
 	return orderOk
 }
 
-func (svc *SettlementGatewayService) findMerchantConfig(order *pb.PayOrder) (*model.AppIdChannelConfig) {
+func (svc *service) findMerchantConfig(order *pb.PayOrder) *configclient.AppIDChannelConfig {
 	configMap := *svc.AppIdAndChannelConfigMap
-	if configMap == nil{
+	if configMap == nil {
 		return nil
 	}
 	merchantConfig := configMap[order.BasePayOrder.AppId]
@@ -37,7 +37,9 @@ func calculateFactAmt(orderAmt uint32, ratePercent float32) (factAmt uint32, far
 	orderAmtFloat := big.NewFloat(float64(orderAmt))
 	fareAmtFloat := big.NewFloat(0).Mul(rateFloat, orderAmtFloat)
 	fareAmtFloat = big.NewFloat(0).Quo(fareAmtFloat, big.NewFloat(100))
-	factAmtFloat := big.NewFloat(0).Add(orderAmtFloat, big.NewFloat(0).Mul(fareAmtFloat, big.NewFloat(-1)))
+	factAmtFloat := big.NewFloat(0).Add(
+		orderAmtFloat, big.NewFloat(0).Mul(fareAmtFloat, big.NewFloat(-1)),
+	)
 
 	factAmt64, _ := factAmtFloat.Float64()
 	factAmt = round(factAmt64)

@@ -11,14 +11,15 @@ import (
 )
 
 const (
-	QUEUE_TYPE_MYSQL = "mysql"
+	// QueueTypeMysql mysql queue
+	QueueTypeMysql = "mysql"
 )
 
 func init() {
-	RegisterQueueType(QUEUE_TYPE_MYSQL, &MySQLConfig{}, instanceFunc)
+	RegisterQueueType(QueueTypeMysql, &MySQLConfig{}, instanceFunc)
 }
 
-func instanceFunc(queueConfig QueueConfig, config interface{}, svc *NotifyService) (Queue, error) {
+func instanceFunc(queueConfig QueueConfig, config interface{}, svc *Service) (Queue, error) {
 	log := logger.Log()
 	queue := &MysqlQueue{}
 	queue.svc = svc
@@ -37,7 +38,7 @@ type MySQLConfig struct {
 
 type MysqlQueue struct {
 	config      *MySQLConfig
-	svc         *NotifyService
+	svc         *Service
 	queueConfig QueueConfig
 	sync.Mutex
 }

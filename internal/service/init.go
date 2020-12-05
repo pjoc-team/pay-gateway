@@ -82,26 +82,48 @@ type options struct {
 
 func (o *options) apply(options ...Option) {
 	for _, option := range options {
-		option(o)
+		option.apply(o)
 	}
 }
 
-type Option func(*options)
+type Option interface {
+	apply(opts *options)
+}
+
+// OptionFunc apply func
+type OptionFunc func(*options)
+
+func (o OptionFunc) apply(opts *options) {
+	o(opts)
+}
 
 type ShutdownFunction func(ctx context.Context)
 
 // WithShutdown 增加关闭函数
 func WithShutdown(function ShutdownFunction) Option {
-	return func(o *options) {
-		o.shutdownFunctions = append(o.shutdownFunctions, function)
-	}
+	return OptionFunc(
+		func(o *options) {
+			o.shutdownFunctions = append(o.shutdownFunctions, function)
+		},
+	)
 }
 
 // WithGrpc 增加grpc服务
 func WithGrpc(info *GrpcInfo) Option {
-	return func(o *options) {
-		o.infos = append(o.infos, info)
-	}
+	return OptionFunc(
+		func(o *options) {
+			o.infos = append(o.infos, info)
+		},
+	)
+}
+
+// WithFlagSet add flagset
+func WithFlagSet(flagSet *pflag.FlagSet) Option {
+	return OptionFunc(
+		func(o *options) {
+			o.flagSet = append(o.flagSet, flagSet)
+		},
+	)
 }
 
 // func WithFlagSet(flagSet *pflag.FlagSet) Option {

@@ -28,7 +28,7 @@ RUN export REPOSITORY=`cat /tmp/go.mod | grep -E "^module\s[0-9a-zA-Z\./_\-]+" |
         bash go_build.sh; \
         ls /app/bin; \
         mv /app/bin/* /app/; \
-        mv /app/${APP} /app/main; \
+        cp /app/${APP} /app/main; \
     else \
         echo "not found go_build.sh. files: `ls`" ;\
     fi

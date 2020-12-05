@@ -199,8 +199,10 @@ func (f *fileStore) Get(serviceName string) (*Service, error) {
 }
 
 func (f *fileStore) readAll() (map[string]*Service, error) {
+	log := logger.Log()
 	raw, err := ioutil.ReadFile(f.filePath)
 	if err != nil {
+		log.Errorf("failed to read file: %v error: %v", f.filePath, err.Error())
 		return nil, err
 	}
 	services := make(map[string]*Service)
@@ -209,6 +211,7 @@ func (f *fileStore) readAll() (map[string]*Service, error) {
 	}
 	err = json.Unmarshal(raw, &services)
 	if err != nil {
+		log.Errorf("failed to read file: %v error: %v", f.filePath, err.Error())
 		return nil, err
 	}
 	return services, nil

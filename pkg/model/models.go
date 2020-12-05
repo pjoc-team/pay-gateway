@@ -11,8 +11,6 @@ type GatewayConfig struct {
 	PayConfig *configclient.PayConfig
 	// 通知配置
 	NoticeConfig *configclient.NoticeConfig
-	// AppID和费率配置
-	AppIDAndChannelConfigMap *AppIDAndChannelConfigMap
 	// AppID和商户配置
 	AppIDAndMerchantMap *MerchantConfigMap
 	// 服务和对应的部署服务名映射
