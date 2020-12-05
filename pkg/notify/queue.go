@@ -12,17 +12,17 @@ import (
 // MessageSerializer message serializer
 type MessageSerializer interface {
 	// Serialize serialize message
-	Serialize(pay.PayNotice) (string, error)
+	Serialize(pay.PayNotify) (string, error)
 	// Deserialize deserialize message
-	Deserialize(str string) (notice *pay.PayNotice, err error)
+	Deserialize(str string) (notify *pay.PayNotify, err error)
 }
 
 // Queue queue interface
 type Queue interface {
 	// Pull pull message
-	Pull(ctx context.Context) ([]*pay.PayNotice, error)
+	Pull(ctx context.Context) ([]*pay.PayNotify, error)
 	// Push push message
-	Push(context.Context, pay.PayNotice) error
+	Push(context.Context, pay.PayNotify) error
 	// MessageSerializer serializer
 	MessageSerializer() MessageSerializer
 }

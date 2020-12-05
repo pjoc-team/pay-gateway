@@ -17,8 +17,8 @@ func NewJSONMessageSerializer() *JSONMessageSerializer {
 }
 
 // Serialize serialize
-func (*JSONMessageSerializer) Serialize(notice pay.PayNotice) (string, error) {
-	bytes, e := json.Marshal(notice)
+func (*JSONMessageSerializer) Serialize(notify pay.PayNotify) (string, error) {
+	bytes, e := json.Marshal(notify)
 	if e != nil {
 		return "", e
 	}
@@ -26,15 +26,15 @@ func (*JSONMessageSerializer) Serialize(notice pay.PayNotice) (string, error) {
 }
 
 // Deserialize deserialize
-func (*JSONMessageSerializer) Deserialize(str string) (notice *pay.PayNotice, err error) {
+func (*JSONMessageSerializer) Deserialize(str string) (notify *pay.PayNotify, err error) {
 	log := logger.Log()
 
 	if str == "" {
 		err = errors.New("string is empty")
 		return
 	}
-	notice = &pay.PayNotice{}
-	if err = json.Unmarshal([]byte(str), notice); err != nil {
+	notify = &pay.PayNotify{}
+	if err = json.Unmarshal([]byte(str), notify); err != nil {
 		log.Errorf("Failed to unmarshal string: %v error: %v", str, err.Error())
 		return
 	}

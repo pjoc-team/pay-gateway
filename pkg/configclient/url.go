@@ -4,8 +4,8 @@ type (
 	// PayConfigServerURL PayConfigServerURL
 	PayConfigServerURL string
 
-	// NoticeConfigServerURL NoticeConfigServerURL
-	NoticeConfigServerURL string
+	// NotifyConfigServerURL NotifyConfigServerURL
+	NotifyConfigServerURL string
 
 	// ServiceConfigServerURL ServiceConfigServerURL
 	ServiceConfigServerURL string

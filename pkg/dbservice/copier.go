@@ -5,27 +5,27 @@ import (
 	pb "github.com/pjoc-team/pay-proto/go"
 )
 
-func newDbNotice(payNotice *pb.PayNotice) *model.Notice {
-	notice := &model.Notice{
-		GatewayOrderID: payNotice.GatewayOrderId,
-		CreateDate:     payNotice.CreateDate,
-		FailTimes:      payNotice.FailTimes,
-		NoticeTime:     payNotice.NoticeTime,
-		Status:         payNotice.Status,
-		ErrorMessage:   payNotice.ErrorMessage,
-		NextNotifyTime: payNotice.NextNotifyTime,
+func newDbNotify(payNotify *pb.PayNotify) *model.Notify {
+	notify := &model.Notify{
+		GatewayOrderID: payNotify.GatewayOrderId,
+		CreateDate:     payNotify.CreateDate,
+		FailTimes:      payNotify.FailTimes,
+		NotifyTime:     payNotify.NotifyTime,
+		Status:         payNotify.Status,
+		ErrorMessage:   payNotify.ErrorMessage,
+		NextNotifyTime: payNotify.NextNotifyTime,
 	}
-	return notice
+	return notify
 }
 
-func newDbNoticeOk(payNoticeOk *pb.PayNoticeOk) *model.NoticeOk {
-	noticeOk := &model.NoticeOk{
-		GatewayOrderID: payNoticeOk.GatewayOrderId,
-		CreateDate:     payNoticeOk.CreateDate,
-		FailTimes:      payNoticeOk.FailTimes,
-		NoticeTime:     payNoticeOk.NoticeTime,
+func newDbNotifyOk(payNotifyOk *pb.PayNotifyOk) *model.NotifyOk {
+	notifyOk := &model.NotifyOk{
+		GatewayOrderID: payNotifyOk.GatewayOrderId,
+		CreateDate:     payNotifyOk.CreateDate,
+		FailTimes:      payNotifyOk.FailTimes,
+		NotifyTime:     payNotifyOk.NotifyTime,
 	}
-	return noticeOk
+	return notifyOk
 }
 
 func newDbPayOrder(payOrder *pb.PayOrder) *model.PayOrder {
@@ -99,7 +99,7 @@ func newDbPayOrderOk(payOrderOk *pb.PayOrderOk) *model.PayOrderOk {
 		BalanceDate:     payOrderOk.BalanceDate,
 		FareAmt:         payOrderOk.FareAmt,
 		FactAmt:         payOrderOk.FactAmt,
-		SendNoticeStats: payOrderOk.SendNoticeStats,
+		SendNotifyStats: payOrderOk.SendNotifyStats,
 	}
 	return orderOk
 }

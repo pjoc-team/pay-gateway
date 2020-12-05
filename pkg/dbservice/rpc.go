@@ -15,99 +15,99 @@ type PayDatabaseService struct {
 	*gorm.DB
 }
 
-// FindPayNoticeLessThenTime find notices less then time
-func (s *PayDatabaseService) FindPayNoticeLessThenTime(
-	ctx context.Context, payNotice *pb.PayNotice,
-) (response *pb.PayNoticeResponse, err error) {
+// FindPayNotifyLessThenTime find notifys less then time
+func (s *PayDatabaseService) FindPayNotifyLessThenTime(
+	ctx context.Context, payNotify *pb.PayNotify,
+) (response *pb.PayNotifyResponse, err error) {
 	log := logger.ContextLog(ctx)
-	notice := newDbNotice(payNotice)
-	// if err = copier.Copy(notice, payNotice); err != nil {
+	notify := newDbNotify(payNotify)
+	// if err = copier.Copy(notify, payNotify); err != nil {
 	//	log.Errorf("failed to copy object! error: %s", err)
 	//	return
 	// }
-	results := make([]model.Notice, 0)
+	results := make([]model.Notify, 0)
 	if results := s.Where(
 		"length(next_notify_time) > 0 and next_notify_time <= ? and status != ?",
-		notice.NextNotifyTime, constant.NotifySuccess,
+		notify.NextNotifyTime, constant.NotifySuccess,
 	).Find(&results); results.RecordNotFound() {
 		log.Errorf("find error: %v", s.Error.Error())
 		return
 	}
-	response = &pb.PayNoticeResponse{}
-	response.PayNotices = make([]*pb.PayNotice, len(results))
-	for i, notice := range results {
-		payNotice := &pb.PayNotice{}
-		if err = copier.Copy(payNotice, notice); err != nil {
+	response = &pb.PayNotifyResponse{}
+	response.PayNotifys = make([]*pb.PayNotify, len(results))
+	for i, notify := range results {
+		payNotify := &pb.PayNotify{}
+		if err = copier.Copy(payNotify, notify); err != nil {
 			log.Error("copy result error! error: %v", err.Error())
 		} else {
-			log.Debugf("found result: %v by query: %v", response, payNotice)
+			log.Debugf("found result: %v by query: %v", response, payNotify)
 		}
-		response.PayNotices[i] = payNotice
+		response.PayNotifys[i] = payNotify
 	}
 	return
 }
 
-// SavePayNotice save pay notice data
-func (s *PayDatabaseService) SavePayNotice(
-	ctx context.Context, payNotice *pb.PayNotice,
+// SavePayNotify save pay notify data
+func (s *PayDatabaseService) SavePayNotify(
+	ctx context.Context, payNotify *pb.PayNotify,
 ) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	notice := newDbNotice(payNotice)
-	if dbResult := s.Create(notice); dbResult.Error != nil {
-		log.Errorf("failed to save notice! notice: %v error: %s", payNotice, err.Error())
+	notify := newDbNotify(payNotify)
+	if dbResult := s.Create(notify); dbResult.Error != nil {
+		log.Errorf("failed to save notify! notify: %v error: %s", payNotify, err.Error())
 		err = dbResult.Error
 		return
 	}
-	log.Infof("succeed save notice: %v", payNotice)
+	log.Infof("succeed save notify: %v", payNotify)
 	result = &pb.ReturnResult{Code: pb.ReturnResultCode_CODE_SUCCESS}
 	return
 }
 
-// UpdatePayNotice update notice by id
-func (s *PayDatabaseService) UpdatePayNotice(
-	ctx context.Context, payNotice *pb.PayNotice,
+// UpdatePayNotify update notify by id
+func (s *PayDatabaseService) UpdatePayNotify(
+	ctx context.Context, payNotify *pb.PayNotify,
 ) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	notice := newDbNotice(payNotice)
-	if dbResult := s.Model(notice).Update(notice); dbResult.Error != nil {
+	notify := newDbNotify(payNotify)
+	if dbResult := s.Model(notify).Update(notify); dbResult.Error != nil {
 		err = dbResult.Error
-		log.Errorf("failed to update notice! notice: %v error: %s", payNotice, err.Error())
+		log.Errorf("failed to update notify! notify: %v error: %s", payNotify, err.Error())
 		return
 	}
-	log.Infof("succeed update notice: %v", payNotice)
+	log.Infof("succeed update notify: %v", payNotify)
 	result = &pb.ReturnResult{Code: pb.ReturnResultCode_CODE_SUCCESS}
 	return
 }
 
-// FindPayNotice find notice
-func (s *PayDatabaseService) FindPayNotice(
-	ctx context.Context, payNotice *pb.PayNotice,
-) (response *pb.PayNoticeResponse, err error) {
+// FindPayNotify find notify
+func (s *PayDatabaseService) FindPayNotify(
+	ctx context.Context, payNotify *pb.PayNotify,
+) (response *pb.PayNotifyResponse, err error) {
 	log := logger.ContextLog(ctx)
-	notice := newDbNotice(payNotice)
-	results := make([]model.Notice, 0)
-	if results := s.Find(&results, notice); results.RecordNotFound() {
+	notify := newDbNotify(payNotify)
+	results := make([]model.Notify, 0)
+	if results := s.Find(&results, notify); results.RecordNotFound() {
 		log.Errorf("find error: %v", s.Error.Error())
 		return
 	}
-	response = &pb.PayNoticeResponse{}
-	response.PayNotices = make([]*pb.PayNotice, len(results))
-	for i, notice := range results {
-		payNotice := &pb.PayNotice{}
-		if err = copier.Copy(payNotice, notice); err != nil {
+	response = &pb.PayNotifyResponse{}
+	response.PayNotifys = make([]*pb.PayNotify, len(results))
+	for i, notify := range results {
+		payNotify := &pb.PayNotify{}
+		if err = copier.Copy(payNotify, notify); err != nil {
 			log.Error("copy result error! error: %v", err.Error())
 		} else {
-			log.Debugf("found result: %v by query: %v", response, payNotice)
+			log.Debugf("found result: %v by query: %v", response, payNotify)
 		}
-		response.PayNotices[i] = payNotice
+		response.PayNotifys[i] = payNotify
 	}
 
 	return
 }
 
-// SavePayNotifyOk save notice ok data
+// SavePayNotifyOk save notify ok data
 func (s *PayDatabaseService) SavePayNotifyOk(
-	ctx context.Context, payNoticeOkRequest *pb.PayNoticeOk,
+	ctx context.Context, payNotifyOkRequest *pb.PayNotifyOk,
 ) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
 	tx := s.Begin()
@@ -116,74 +116,74 @@ func (s *PayDatabaseService) SavePayNotifyOk(
 			tx.Rollback()
 		}
 	}()
-	noticeOk := newDbNoticeOk(payNoticeOkRequest)
-	if dbResult := s.Create(noticeOk); dbResult.Error != nil {
+	notifyOk := newDbNotifyOk(payNotifyOkRequest)
+	if dbResult := s.Create(notifyOk); dbResult.Error != nil {
 		log.Errorf(
-			"failed to save ok order! order: %v error: %s", payNoticeOkRequest,
+			"failed to save ok order! order: %v error: %s", payNotifyOkRequest,
 			dbResult.Error.Error(),
 		)
 		err = dbResult.Error
 		tx.Rollback()
 		return
 	}
-	notice := &model.Notice{GatewayOrderID: payNoticeOkRequest.GatewayOrderId}
-	notice.Status = constant.OrderStatusSuccess
-	if update := s.Model(notice).Update(notice); update.Error != nil {
-		log.Errorf("failed to update notice!")
+	notify := &model.Notify{GatewayOrderID: payNotifyOkRequest.GatewayOrderId}
+	notify.Status = constant.OrderStatusSuccess
+	if update := s.Model(notify).Update(notify); update.Error != nil {
+		log.Errorf("failed to update notify!")
 		tx.Rollback()
 		return
 	}
 	err = tx.Commit().Error
 
-	log.Infof("succeed save ok notice: %v", payNoticeOkRequest)
+	log.Infof("succeed save ok notify: %v", payNotifyOkRequest)
 	result = &pb.ReturnResult{Code: pb.ReturnResultCode_CODE_SUCCESS}
 	return
 }
 
 // FindPayNotifyOk find notify ok data
 func (s *PayDatabaseService) FindPayNotifyOk(
-	ctx context.Context, payNoticeOk *pb.PayNoticeOk,
-) (response *pb.PayNoticeOkResponse, err error) {
+	ctx context.Context, payNotifyOk *pb.PayNotifyOk,
+) (response *pb.PayNotifyOkResponse, err error) {
 	log := logger.ContextLog(ctx)
-	noticeOk := newDbNoticeOk(payNoticeOk)
-	results := make([]model.NoticeOk, 0)
-	if results := s.Find(&results, noticeOk); results.RecordNotFound() {
+	notifyOk := newDbNotifyOk(payNotifyOk)
+	results := make([]model.NotifyOk, 0)
+	if results := s.Find(&results, notifyOk); results.RecordNotFound() {
 		log.Errorf("find error: %v", s.Error.Error())
 		return
 	}
-	response = &pb.PayNoticeOkResponse{}
-	response.PayNoticeOks = make([]*pb.PayNoticeOk, len(results))
+	response = &pb.PayNotifyOkResponse{}
+	response.PayNotifyOks = make([]*pb.PayNotifyOk, len(results))
 
-	for i, noticeOk := range results {
-		payNoticeOk := &pb.PayNoticeOk{}
-		if err = copier.Copy(payNoticeOk, noticeOk); err != nil {
+	for i, notifyOk := range results {
+		payNotifyOk := &pb.PayNotifyOk{}
+		if err = copier.Copy(payNotifyOk, notifyOk); err != nil {
 			log.Error("copy result error! error: %v", err.Error())
 		} else {
-			log.Debugf("found result: %v by query: %v", response, payNoticeOk)
+			log.Debugf("found result: %v by query: %v", response, payNotifyOk)
 		}
-		response.PayNoticeOks[i] = payNoticeOk
+		response.PayNotifyOks[i] = payNotifyOk
 	}
 
-	if err = copier.Copy(&response.PayNoticeOks, results); err != nil {
+	if err = copier.Copy(&response.PayNotifyOks, results); err != nil {
 		log.Error("copy result error! error: %v", err.Error())
 	} else {
-		log.Debugf("found result: %v by query: %v", response, payNoticeOk)
+		log.Debugf("found result: %v by query: %v", response, payNotifyOk)
 	}
 	return
 }
 
-// UpdatePayNoticeOk update pay notice ok data
-func (s *PayDatabaseService) UpdatePayNoticeOk(
-	ctx context.Context, payNoticeOk *pb.PayNoticeOk,
+// UpdatePayNotifyOk update pay notify ok data
+func (s *PayDatabaseService) UpdatePayNotifyOk(
+	ctx context.Context, payNotifyOk *pb.PayNotifyOk,
 ) (result *pb.ReturnResult, err error) {
 	log := logger.ContextLog(ctx)
-	noticeOk := newDbNoticeOk(payNoticeOk)
-	if dbResult := s.Model(noticeOk).Update(noticeOk); dbResult.Error != nil {
-		log.Errorf("failed to save ok notice! noticeOk: %v error: %s", payNoticeOk, err.Error())
+	notifyOk := newDbNotifyOk(payNotifyOk)
+	if dbResult := s.Model(notifyOk).Update(notifyOk); dbResult.Error != nil {
+		log.Errorf("failed to save ok notify! notifyOk: %v error: %s", payNotifyOk, err.Error())
 		err = dbResult.Error
 		return
 	}
-	log.Infof("succeed save ok notice: %v", payNoticeOk)
+	log.Infof("succeed save ok notify: %v", payNotifyOk)
 	result = &pb.ReturnResult{Code: pb.ReturnResultCode_CODE_SUCCESS}
 	return
 }

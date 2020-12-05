@@ -22,7 +22,7 @@ type service struct {
 	scheduler      *notify.Scheduler
 }
 
-func (svc *service) SendNotify(ctx context.Context, notify *pb.PayNotice) (
+func (svc *service) SendNotify(ctx context.Context, notify *pb.PayNotify) (
 	result *pb.ReturnResult, err error,
 ) {
 	log := logger.ContextLog(ctx)
@@ -72,24 +72,24 @@ func (svc *service) NotifyOrder(
 		log.Error(err.Error())
 		return
 	}
-	payNotice := svc.notifyService.GeneratePayNotice(existsOrder)
+	payNotify := svc.notifyService.GeneratePayNotify(existsOrder)
 
-	timeoutCtxNotice, _ := context.WithTimeout(ctx, 6*time.Second)
-	result, err := dbClient.SavePayNotice(timeoutCtxNotice, payNotice)
+	timeoutCtxNotify, _ := context.WithTimeout(ctx, 6*time.Second)
+	result, err := dbClient.SavePayNotify(timeoutCtxNotify, payNotify)
 	if err != nil {
-		log.Errorf("Failed to save payNotice: %v", payNotice)
+		log.Errorf("Failed to save payNotify: %v", payNotify)
 		return
 	} else if result != nil && result.Code != pb.ReturnResultCode_CODE_SUCCESS {
-		err = fmt.Errorf("failed to save payNotice! message: %v", result)
+		err = fmt.Errorf("failed to save payNotify! message: %v", result)
 		log.Errorf(err.Error())
 		return
 	}
-	returnResult, err := svc.SendNotify(ctx, payNotice)
+	returnResult, err := svc.SendNotify(ctx, payNotify)
 	if err != nil {
-		log.Errorf("Failed to save payNotice: %v", payNotice)
+		log.Errorf("Failed to save payNotify: %v", payNotify)
 		return
 	} else if returnResult != nil && returnResult.Code != pb.ReturnResultCode_CODE_SUCCESS {
-		err = fmt.Errorf("failed to save payNotice! message: %v", result)
+		err = fmt.Errorf("failed to save payNotify! message: %v", result)
 		log.Errorf(err.Error())
 		return
 	}
@@ -126,7 +126,7 @@ func (svc *service) ProcessOrderSuccess(
 	sendStatus := constant.NotifyFailed
 	// save to order ok
 	orderOk, _ := svc.GenerateSuccessOrder(ctx, existsOrder)
-	orderOk.SendNoticeStats = sendStatus
+	orderOk.SendNotifyStats = sendStatus
 
 	result, e := dbClient.SavePayOrderOk(ctx, orderOk)
 	if e != nil {
@@ -151,7 +151,7 @@ func (svc *service) ProcessOrderSuccess(
 		return
 	}
 	sendStatus = constant.NotifySuccess
-	orderOk.SendNoticeStats = sendStatus
+	orderOk.SendNotifyStats = sendStatus
 	result, err = dbClient.UpdatePayOrderOk(ctx, orderOk)
 	if err != nil {
 		log.Errorf("Failed to update order ok! order: %v error: %v", orderOk, err.Error())

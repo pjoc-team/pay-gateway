@@ -24,34 +24,34 @@ var DefaultNotifyExpression = []int{30, 30, 120, 240, 480, 1200, 3600, 7200, 432
 // Service notify service
 type Service struct {
 	pb.PayDatabaseServiceClient
-	GatewayConfig *model.GatewayConfig
 	URLGenerator  *URLGenerator
 	NotifyQueue   Queue
+	configClients configclient.ConfigClients
 }
 
 // NewService create notify service
 func NewService(
 	config QueueConfig, dbClient pb.PayDatabaseServiceClient,
-	gatewayConfig *model.GatewayConfig, clients configclient.ConfigClients,
-) (noticeService *Service, err error) {
+	 clients configclient.ConfigClients,
+) (notifyService *Service, err error) {
 	log := logger.Log()
 
-	noticeService = &Service{}
+	notifyService = &Service{}
 	var queue Queue
-	queue, err = InstanceQueue(config, noticeService)
+	queue, err = InstanceQueue(config, notifyService)
 	if err != nil {
 		log.Errorf("Failed to init queue! error: %v", err.Error())
 		return
 	}
-	noticeService.NotifyQueue = queue
-	noticeService.GatewayConfig = gatewayConfig
-	noticeService.PayDatabaseServiceClient = dbClient
-	noticeService.URLGenerator = NewURLGenerator(clients)
+	notifyService.NotifyQueue = queue
+	notifyService.PayDatabaseServiceClient = dbClient
+	notifyService.configClients = clients
+	notifyService.URLGenerator = NewURLGenerator(clients)
 	return
 }
 
 // Notify do notify
-func (svc *Service) Notify(ctx context.Context, notify *pb.PayNotice) error {
+func (svc *Service) Notify(ctx context.Context, notify *pb.PayNotify) error {
 	log := logger.Log()
 
 	err := svc.NotifyQueue.Push(ctx, *notify)
@@ -61,9 +61,9 @@ func (svc *Service) Notify(ctx context.Context, notify *pb.PayNotice) error {
 	return err
 }
 
-// GeneratePayNotice generate PayNotice
-func (svc *Service) GeneratePayNotice(order *pb.PayOrder) *pb.PayNotice {
-	notify := &pb.PayNotice{}
+// GeneratePayNotify generate PayNotify
+func (svc *Service) GeneratePayNotify(order *pb.PayOrder) *pb.PayNotify {
+	notify := &pb.PayNotify{}
 
 	baseOrder := order.BasePayOrder
 	notify.GatewayOrderId = baseOrder.GatewayOrderId
@@ -74,22 +74,22 @@ func (svc *Service) GeneratePayNotice(order *pb.PayOrder) *pb.PayNotice {
 	return notify
 }
 
-// UpdatePayNoticeSuccess update notify to success
-func (svc *Service) UpdatePayNoticeSuccess(ctx context.Context, notify *pb.PayNotice) (err error) {
+// UpdatePayNotifySuccess update notify to success
+func (svc *Service) UpdatePayNotifySuccess(ctx context.Context, notify *pb.PayNotify) (err error) {
 	log := logger.Log()
 
-	notify.NoticeTime = date.NowTime()
+	notify.NotifyTime = date.NowTime()
 	notify.Status = constant.OrderStatusSuccess
-	notify.NoticeTime = date.NowTime()
+	notify.NotifyTime = date.NowTime()
 
-	noticeOk := &pb.PayNoticeOk{}
-	if err = copier.Copy(noticeOk, notify); err != nil {
+	notifyOk := &pb.PayNotifyOk{}
+	if err = copier.Copy(notifyOk, notify); err != nil {
 		log.Errorf("Failed to copy instance! error: %v", err.Error())
 		return
 	}
 
-	noticeOk.GatewayOrderId = notify.GatewayOrderId
-	returnResult, err := svc.SavePayNotifyOk(ctx, noticeOk)
+	notifyOk.GatewayOrderId = notify.GatewayOrderId
+	returnResult, err := svc.SavePayNotifyOk(ctx, notifyOk)
 	if err != nil {
 		log.Errorf(
 			"Failed to update notify! orderId: %v error: %v", notify.GatewayOrderId, err.Error(),
@@ -101,19 +101,19 @@ func (svc *Service) UpdatePayNoticeSuccess(ctx context.Context, notify *pb.PayNo
 	return
 }
 
-// UpdatePayNoticeFail update pay notice fail
-func (svc *Service) UpdatePayNoticeFail(
-	ctx context.Context, notify *pb.PayNotice,
+// UpdatePayNotifyFail update pay notify fail
+func (svc *Service) UpdatePayNotifyFail(
+	ctx context.Context, notify *pb.PayNotify,
 	reason error,
 ) (err error) {
 	log := logger.Log()
 	notify.Status = constant.OrderStatusFailed
 	notify.ErrorMessage = reason.Error()
-	noticeExpression := DefaultNotifyExpression
-	if svc.GatewayConfig.NoticeConfig != nil && svc.GatewayConfig.NoticeConfig.NoticeDelaySecondExpressions != nil {
-		noticeExpression = svc.GatewayConfig.NoticeConfig.NoticeDelaySecondExpressions
+	notifyExpression := DefaultNotifyExpression
+	if svc.GatewayConfig.NotifyConfig != nil && svc.GatewayConfig.NotifyConfig.NotifyDelaySecondExpressions != nil {
+		notifyExpression = svc.GatewayConfig.NotifyConfig.NotifyDelaySecondExpressions
 	}
-	nextTimeStr, err := NextTimeToNotice(notify.FailTimes, noticeExpression)
+	nextTimeStr, err := NextTimeToNotify(notify.FailTimes, notifyExpression)
 	if err != nil {
 		log.Errorf("Failed to build next notify time! error: %v", err.Error())
 		nextTimeStr = ""
@@ -121,7 +121,7 @@ func (svc *Service) UpdatePayNoticeFail(
 
 	notify.FailTimes++
 	notify.NextNotifyTime = nextTimeStr
-	result, err := svc.UpdatePayNotice(ctx, notify)
+	result, err := svc.UpdatePayNotify(ctx, notify)
 	if err != nil {
 		log.Errorf("failed to update notify: %v error: %v", err.Error())
 		return
@@ -130,8 +130,8 @@ func (svc *Service) UpdatePayNoticeFail(
 	return
 }
 
-// SendPayNotice 发送通知
-func (svc *Service) SendPayNotice(ctx context.Context, notify *pb.PayNotice) (err error) {
+// SendPayNotify 发送通知
+func (svc *Service) SendPayNotify(ctx context.Context, notify *pb.PayNotify) (err error) {
 	log := logger.Log()
 
 	payOrderOkQuery := &pb.PayOrderOk{}
@@ -159,16 +159,21 @@ func (svc *Service) SendPayNotice(ctx context.Context, notify *pb.PayNotice) (er
 	} else if url == "" {
 		errorf := fmt.Errorf("there is no notify url of order: %v ", payOrderOk)
 		log.Error(errorf)
-		err2 := svc.UpdatePayNoticeFail(ctx, notify, fmt.Errorf("there is no notify url of order"))
+		err2 := svc.UpdatePayNotifyFail(ctx, notify, fmt.Errorf("there is no notify url of order"))
 		if err2 != nil {
-			log.Errorf("update db with error: %v", err.Error())
+			log.Errorf("update db with error: %v", err2.Error())
 		}
 		return
 	}
 
 	resp, err := http.DefaultClient.PostForm(url, form)
 	if resp != nil {
-		defer resp.Body.Close()
+		defer func() {
+			err2 := resp.Body.Close()
+			if err2 != nil{
+				log.Errorf("failed to close body: %v", err2.Error())
+			}
+		}()
 	}
 	if err != nil {
 		log.Errorf("Failed to send to url: %v and form: {%v}. Error: %v", url, form, err)
@@ -187,7 +192,7 @@ func (svc *Service) SendPayNotice(ctx context.Context, notify *pb.PayNotice) (er
 			SuccessResponse, responseString,
 		)
 		// Save notify when fail!
-		err2 := svc.UpdatePayNoticeFail(ctx, notify, err)
+		err2 := svc.UpdatePayNotifyFail(ctx, notify, err)
 		if err2 != nil {
 			log.Errorf("update db with error: %v", err.Error())
 		}
@@ -195,8 +200,8 @@ func (svc *Service) SendPayNotice(ctx context.Context, notify *pb.PayNotice) (er
 	return
 }
 
-// NextTimeToNotice next time to notify
-func NextTimeToNotice(failedTimes uint32, config []int) (nextTimeStr string, err error) {
+// NextTimeToNotify next time to notify
+func NextTimeToNotify(failedTimes uint32, config []int) (nextTimeStr string, err error) {
 	if int(failedTimes) >= len(config) || int(failedTimes) < 0 {
 		err = fmt.Errorf(
 			"failed times is greater than max times! failed times: %d max failed times: %d",

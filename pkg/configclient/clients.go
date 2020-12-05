@@ -25,7 +25,7 @@ type ConfigClients interface {
 // configClients 所有配置
 type configClients struct {
 	PayConfigServer            *configClient
-	NoticeConfigServer         *configClient
+	NotifyConfigServer         *configClient
 	ServiceConfigServer        *configClient
 	ChannelServiceConfigServer *configClient
 	MerchantConfigServer       *configClient
@@ -108,11 +108,11 @@ func (c *configClients) initConfigs(o *options) error {
 	}
 	c.PayConfigServer = client
 
-	client, err = newConfigClient(o.NoticeConfigServerURL)
+	client, err = newConfigClient(o.NotifyConfigServerURL)
 	if err != nil {
 		return err
 	}
-	c.NoticeConfigServer = client
+	c.NotifyConfigServer = client
 
 	client, err = newConfigClient(o.ServiceConfigServerURL)
 	if err != nil {

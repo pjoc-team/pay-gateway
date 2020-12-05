@@ -8,16 +8,16 @@ import (
 	"time"
 )
 
-func TestNextTimeToNotice(t *testing.T) {
+func TestNextTimeToNotify(t *testing.T) {
 	for i := 0; i < len(DefaultNotifyExpression); i++ {
-		nextTime, err := NextTimeToNotice(uint32(i), DefaultNotifyExpression)
+		nextTime, err := NextTimeToNotify(uint32(i), DefaultNotifyExpression)
 		if err != nil {
 			assert.Fail(t, err.Error())
 		}
 		fmt.Printf("now: %v nextTime: %v \n", date.NowTime(), nextTime)
 		assert.Equal(t, DefaultNotifyExpression[i], TimeDelayNow(nextTime))
 	}
-	_, err := NextTimeToNotice(uint32(len(DefaultNotifyExpression)), DefaultNotifyExpression)
+	_, err := NextTimeToNotify(uint32(len(DefaultNotifyExpression)), DefaultNotifyExpression)
 	if err == nil {
 		assert.Fail(t, "Must error!")
 	} else {

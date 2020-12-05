@@ -6,7 +6,7 @@ import "github.com/spf13/pflag"
 type options struct {
 	ps                            *pflag.FlagSet
 	PayConfigServerURL            *configURL
-	NoticeConfigServerURL         *configURL
+	NotifyConfigServerURL         *configURL
 	ServiceConfigServerURL        *configURL
 	ChannelServiceConfigServerURL *configURL
 	MerchantConfigServerURL       *configURL
@@ -27,11 +27,11 @@ func newOpts() (*options, error) {
 	}
 	o.ps.StringVar(&o.PayConfigServerURL.url, o.PayConfigServerURL.Flag(), "file://./conf/biz/pay-config.yaml", "config uri. see: config.Server")
 
-	o.NoticeConfigServerURL = &configURL{
+	o.NotifyConfigServerURL = &configURL{
 		required: false,
-		flag:     "notice-config-url",
+		flag:     "notify-config-url",
 	}
-	o.ps.StringVar(&o.NoticeConfigServerURL.url, o.NoticeConfigServerURL.Flag(), "file://./conf/biz/notice-config.yaml", "config uri. see: config.Server")
+	o.ps.StringVar(&o.NotifyConfigServerURL.url, o.NotifyConfigServerURL.Flag(), "file://./conf/biz/notify-config.yaml", "config uri. see: config.Server")
 
 	o.ServiceConfigServerURL = &configURL{
 		required: false,
@@ -82,10 +82,10 @@ func WithPayConfigServer(required bool) Option {
 	}
 }
 
-// WithNoticeConfigServer 设置NoticeConfigServer
-func WithNoticeConfigServer(required bool) Option {
+// WithNotifyConfigServer 设置NotifyConfigServer
+func WithNotifyConfigServer(required bool) Option {
 	return func(o *options) {
-		o.NoticeConfigServerURL.required = required
+		o.NotifyConfigServerURL.required = required
 	}
 }
 

@@ -10,14 +10,14 @@ type PayConfig struct {
 	ReturnURLPattern string `json:"return_url_pattern" yaml:"returnURLPattern" validate:"required"`
 }
 
-// NoticeConfig 通知配置
-type NoticeConfig struct {
-	NoticeIntervalSecond int `json:"notice_interval_second" yaml:"noticeIntervalSecond"`
+// NotifyConfig 通知配置
+type NotifyConfig struct {
+	NotifyIntervalSecond int `json:"notify_interval_second" yaml:"notifyIntervalSecond"`
 	// 通知间隔
 	//
 	// 例如: [30, 30, 120, 240, 480, 1200, 3600, 7200, 43200, 86400, 172800]
 	// 表示如果通知失败，则会隔 30s, 30s, 2min, 4min, 8min, 20min, 1H, 2H, 12H, 24H, 48H 通知
-	NoticeDelaySecondExpressions []int `json:"notice_expressions" yaml:"noticeDelaySecondExpressions"`
+	NotifyDelaySecondExpressions []int `json:"notify_expressions" yaml:"notifyDelaySecondExpressions"`
 }
 
 // ServiceConfig 服务发现配置

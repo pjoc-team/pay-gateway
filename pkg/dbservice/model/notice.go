@@ -1,30 +1,30 @@
 package model
 
-// Notice notice model
-type Notice struct {
+// Notify notify model
+type Notify struct {
 	GatewayOrderID string `gorm:"primary_key"`
 	CreateDate     string `gorm:"index"`
 	FailTimes      uint32
-	NoticeTime     string `gorm:"index"`
+	NotifyTime     string `gorm:"index"`
 	Status         string `gorm:"index"`
 	ErrorMessage   string
 	NextNotifyTime string `gorm:"index"`
 }
 
-// TableName table name of notice
-func (Notice) TableName() string{
-	return "pay_notice"
+// TableName table name of notify
+func (Notify) TableName() string{
+	return "pay_notify"
 }
 
-// NoticeOk notice ok model
-type NoticeOk struct {
+// NotifyOk notify ok model
+type NotifyOk struct {
 	GatewayOrderID string `gorm:"primary_key"`
 	CreateDate     string `gorm:"index"`
 	FailTimes      uint32
-	NoticeTime     string `gorm:"index"`
+	NotifyTime     string `gorm:"index"`
 }
 
-// TableName table name of NoticeOk model
-func (NoticeOk) TableName() string{
-	return "pay_notice_ok"
+// TableName table name of NotifyOk model
+func (NotifyOk) TableName() string{
+	return "pay_notify_ok"
 }

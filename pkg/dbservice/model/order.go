@@ -74,7 +74,7 @@ type PayOrderOk struct {
 	BalanceDate     string `gorm:"index" json:"balance_date"`
 	FareAmt         uint32 `json:"fare_amt"`
 	FactAmt         uint32 `json:"fact_amt"`
-	SendNoticeStats string `gorm:"index" json:"send_notice_stats"`
+	SendNotifyStats string `gorm:"index" json:"send_notify_stats"`
 }
 
 // TableName table name of PayOrderOk
