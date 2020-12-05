@@ -2,10 +2,9 @@ package notify
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-playground/form"
 	"github.com/jinzhu/copier"
-	"github.com/pjoc-team/pay-gateway/pkg/model"
+	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/sign"
 	pay "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
@@ -61,11 +60,11 @@ type Body struct {
 type UrlGenerator struct {
 	// validator.paramsCompacter = sign.NewParamsCompacter(&pay.PayRequest{}, "json", []string{"sign"}, true, "&", "=")
 	paramsCompacter sign.ParamsCompacter
-	config          model.GatewayConfig
+	config          configclient.ConfigClients
 	encoder         *form.Encoder
 }
 
-func NewUrlGenerator(config model.GatewayConfig) *UrlGenerator {
+func NewUrlGenerator(config configclient.ConfigClients) *UrlGenerator {
 	generator := &UrlGenerator{}
 	generator.paramsCompacter = sign.NewParamsCompacter(&Body{}, "json", []string{"sign"}, true, "&", "=")
 	generator.config = config
@@ -76,20 +75,15 @@ func NewUrlGenerator(config model.GatewayConfig) *UrlGenerator {
 func (g *UrlGenerator) GenerateSign(ctx context.Context, body *Body) (str string, err error) {
 	log := logger.Log()
 
-	configMap := g.config.AppIdAndMerchantMap
-	if configMap == nil {
-		err = fmt.Errorf("coud'nt found config of app id. body: %v appid: %v", body, body.AppId)
-		return
-	}
-	config, exists := (*configMap)[body.AppId]
-	if !exists {
-		err = fmt.Errorf("coud'nt found config of app id. body: %v appid: %v", body, body.AppId)
-		return
+	appConfig, err := g.config.GetAppConfig(ctx, body.AppId)
+	if err != nil {
+		log.Errorf("failed to get config: %v error: %v", body.AppId, err.Error())
+		return "", err
 	}
 
 	source := g.paramsCompacter.ParamsToString(body)
 	log.Debugf("Generate url string: %v by body: %v", source, body)
-	str, err = sign.GenerateSign(ctx, body.Charset, source, &config, body.SignType)
+	str, err = sign.GenerateSign(ctx, body.Charset, source, appConfig, body.SignType)
 	return
 }
 

@@ -3,6 +3,7 @@ module github.com/pjoc-team/pay-gateway
 go 1.14
 
 require (
+	github.com/Shopify/sarama v1.27.2
 	github.com/antihax/optional v1.0.0 // indirect
 	github.com/astaxie/beego v1.10.0 // indirect
 	github.com/blademainer/commons v0.0.15-0.20201007122525-b47bc010786c
@@ -11,12 +12,11 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/go-playground/form v3.1.4+incompatible
 	github.com/gin-gonic/gin v1.3.0
+	github.com/go-playground/form v3.1.4+incompatible
 	github.com/go-playground/validator/v10 v10.4.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.2 // indirect
-	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/google/martian/v3 v3.0.0 // indirect
 	github.com/google/pprof v0.0.0-20200708004538-1a94d8640e99 // indirect
 	github.com/google/uuid v1.1.2 // indirect
@@ -39,7 +39,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.6.1
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.0+incompatible // indirect
 	github.com/ugorji/go v1.1.7 // indirect
@@ -48,7 +48,7 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381
+	golang.org/x/net v0.0.0-20200904194848-62affa334b73
 	golang.org/x/sync v0.0.0-20200930132711-30421366ff76
 	golang.org/x/sys v0.0.0-20200803210538-64077c9b5642 // indirect
 	golang.org/x/text v0.3.3
@@ -60,6 +60,7 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/go-playground/assert.v1 v1.2.1
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
+	gopkg.in/go-playground/validator.v9 v9.28.0
 	gopkg.in/yaml.v2 v2.2.7
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect

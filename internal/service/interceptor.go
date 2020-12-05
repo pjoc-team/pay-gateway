@@ -61,7 +61,7 @@ func tracingServerInterceptor(h http.Handler) http.Handler {
 // healthInterceptor 拦截health请求
 func healthInterceptor(healthServer *health.Server) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		logger := logger.ContextLog(request.Context())
+		log := logger.ContextLog(request.Context())
 		checkRequest := &healthpb.HealthCheckRequest{}
 		check, err3 := healthServer.Check(request.Context(), checkRequest)
 		if err3 != nil {
