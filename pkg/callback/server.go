@@ -17,27 +17,29 @@ type NotifyService struct {
 }
 
 func (svc *NotifyService) CallbackByGet(
-	ctx context.Context, request *pb.HttpCallbackRequest,
-) (*httpbody.HttpBody, error) {
-	log := logger.ContextLog(ctx)
+	request *pb.HttpCallbackRequest, response pb.ChannelCallback_CallbackByGetServer,
+) error {
+	log := logger.Log()
 	log.Infof("request: %v", request)
 	resp := &httpbody.HttpBody{
 		ContentType: "text/html",
 		Data:        []byte("get ok"),
 	}
-	return resp, nil
+	response.Send(resp)
+	return nil
 }
 
 func (svc *NotifyService) CallbackByPost(
-	ctx context.Context, request *pb.HttpCallbackRequest,
-) (*httpbody.HttpBody, error) {
-	log := logger.ContextLog(ctx)
+	request *pb.HttpCallbackRequest, response pb.ChannelCallback_CallbackByPostServer,
+) error {
+	log := logger.Log()
 	log.Infof("request: %v", request)
 	resp := &httpbody.HttpBody{
 		ContentType: "text/html",
 		Data:        []byte("post ok"),
 	}
-	return resp, nil
+	response.Send(resp)
+	return nil
 }
 
 // Notify notify by order id

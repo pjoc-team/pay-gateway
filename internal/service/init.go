@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	grpcdialer "github.com/blademainer/commons/pkg/grpc"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
@@ -26,6 +27,7 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof" // import pprof
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -419,7 +421,7 @@ func (s *Server) initGrpc() error {
 	}
 	for _, info := range s.o.infos {
 		// 注册所有grpc
-		RegisterGrpc(info.Name, info.RegisterGrpcFunc, info.RegisterGatewayFunc)
+		RegisterGrpc(info.Name, info.RegisterGrpcFunc, info.RegisterGatewayFunc, info.RegisterStreamFunc)
 		err := s.services.Discovery.RegisterService(
 			info.Name, &discovery.Service{
 				ServiceName: info.Name,
@@ -608,12 +610,34 @@ func (s *Server) initGrpc() error {
 	g.Go(
 		func() error {
 			log.Infof("grpc http gateway listen %v", s.o.listenHTTPGateway)
+			grpcURL, err := url.Parse(fmt.Sprintf("http://localhost:%d", s.o.listen))
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			conn, err := grpcdialer.DialUrl(ctx, *grpcURL)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
 
 			httpMux := http.NewServeMux()
 			httpMux.Handle("/", mux)
 			hs := &http.Server{
 				Addr:    fmt.Sprintf(":%d", s.o.listenHTTPGateway),
 				Handler: allowCORS(mux),
+			}
+
+			for k, registerGrpc := range GrpcServices {
+				if registerGrpc.RegisterStreamFunc == nil{
+					log.Warnf("registerGrpc: %v's streaming is nil", registerGrpc)
+					continue
+				}
+				log.Infof("initializing grpc streaming: %v", k)
+				err := registerGrpc.RegisterStreamFunc(ctx, mux, conn)
+				if err != nil {
+					log.Fatalf("failed to register grpc: %v error: %v", k, err.Error())
+				} else {
+					log.Infof("succeed register grpc gateway: %v", k)
+				}
 			}
 			s.shutdownFunctions = append(
 				s.shutdownFunctions, func(ctx context.Context) {

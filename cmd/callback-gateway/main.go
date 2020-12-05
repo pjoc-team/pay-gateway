@@ -55,6 +55,7 @@ func main() {
 			err := pay.RegisterChannelCallbackHandlerServer(ctx, mux, server)
 			return err
 		},
+		RegisterStreamFunc: pay.RegisterChannelCallbackHandler,
 		Name: serviceName.String(),
 	}
 	s.Start(service.WithGrpc(grpcInfo), service.WithFlagSet(set))
