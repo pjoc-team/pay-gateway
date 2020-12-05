@@ -8,3 +8,6 @@ golangci_lint_by_docker:
 
 golint_by_docker:
 	bash scripts/golint_by_docker.sh
+
+build:
+	bash go_build.sh
