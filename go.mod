@@ -15,6 +15,7 @@ require (
 	github.com/gin-gonic/gin v1.3.0
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/go-playground/validator/v10 v10.4.0
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/martian/v3 v3.0.0 // indirect

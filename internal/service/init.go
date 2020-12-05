@@ -7,7 +7,7 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	_ "github.com/pjoc-team/pay-gateway/pkg/config/file"	// import config backend file
+	_ "github.com/pjoc-team/pay-gateway/pkg/config/file" // import config backend file
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/metadata"
 	"github.com/pjoc-team/pay-gateway/pkg/util/network"
@@ -42,8 +42,10 @@ import (
 // )
 
 const (
-	// DefaultHTTPPort default http port
+	// DefaultHTTPPort default http port of in process grpc gateway
 	DefaultHTTPPort = 8080
+	// DefaultHTTPGatewayPort use http gateway for grpc
+	DefaultHTTPGatewayPort = 8088
 	// DefaultInternalHTTPPort default internal http port
 	DefaultInternalHTTPPort = 8081
 	// DefaultGRPCPort default grpc port
@@ -65,12 +67,13 @@ type Server struct {
 }
 
 type options struct {
-	listen         int
-	listenHTTP     int
-	listenInternal int
-	listenPPROF    int
-	network        string
-	logLevel       string
+	listen            int
+	listenHTTP        int
+	listenHTTPGateway int
+	listenInternal    int
+	listenPPROF       int
+	network           string
+	logLevel          string
 
 	name              string
 	infos             []*GrpcInfo
@@ -196,6 +199,10 @@ func (s *Server) flags() *pflag.FlagSet {
 	flagSet.IntVar(&s.o.listen, "listen", DefaultGRPCPort, "listen of the gRPC service")
 	flagSet.IntVar(&s.o.listenHTTP, "listen-http", DefaultHTTPPort, "listen of the http service")
 	flagSet.IntVar(
+		&s.o.listenHTTPGateway, "listen-http-gateway", DefaultHTTPGatewayPort,
+		"listen of the http grpc gateway",
+	)
+	flagSet.IntVar(
 		&s.o.listenInternal, "listen-internal", DefaultInternalHTTPPort,
 		"listen of the internal http service",
 	)
@@ -210,7 +217,6 @@ func (s *Server) flags() *pflag.FlagSet {
 		&s.o.enablePprof, "enable-pprof", true,
 		"turn on pprof debug tools",
 	)
-	flagSet.BoolVar(&s.o.inProcessGateway, "inprocess-gateway", true, "grpc and gateway in process")
 	for _, p := range s.o.flagSet {
 		flagSet.AddFlagSet(p)
 	}
@@ -596,6 +602,30 @@ func (s *Server) initGrpc() error {
 			}
 
 			return nil
+		},
+	)
+
+	g.Go(
+		func() error {
+			log.Infof("grpc http gateway listen %v", s.o.listenHTTPGateway)
+
+			httpMux := http.NewServeMux()
+			httpMux.Handle("/", mux)
+			hs := &http.Server{
+				Addr:    fmt.Sprintf(":%d", s.o.listenHTTPGateway),
+				Handler: allowCORS(mux),
+			}
+			s.shutdownFunctions = append(
+				s.shutdownFunctions, func(ctx context.Context) {
+					err2 := hs.Shutdown(context.Background())
+					if err2 != nil {
+						log := logger.ContextLog(ctx)
+						log.Error(err2.Error())
+					}
+				},
+			)
+			err2 := hs.ListenAndServe()
+			return err2
 		},
 	)
 	return nil
