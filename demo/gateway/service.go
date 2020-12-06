@@ -120,7 +120,7 @@ func Run(ctx context.Context, opts Options) error {
 	return nil
 }
 
-// Run starts the example gRPC service.
+// RunGrpc starts the example gRPC service.
 // "network" and "address" are passed to net.Listen.
 func RunGrpc(ctx context.Context, network, address string) error {
 	l, err := net.Listen(network, address)

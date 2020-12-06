@@ -18,6 +18,7 @@ func (s server) Download(ctx context.Context, e *empty.Empty) (*httpbody.HttpBod
 	return bd, nil
 }
 
+// NewStreamServer create server
 func NewStreamServer() proto.StreamServiceServer {
 	return &server{}
 }

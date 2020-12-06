@@ -17,6 +17,7 @@ type NotifyService struct {
 	services *discovery.Services
 }
 
+// CallbackByGet callback by get
 func (svc *NotifyService) CallbackByGet(
 	request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByGetServer,
 ) error {
@@ -48,6 +49,7 @@ func (svc *NotifyService) CallbackByGet(
 	return nil
 }
 
+// CallbackByPost callback by posts
 func (svc *NotifyService) CallbackByPost(
 	request *pb.HttpCallbackRequest, response pb.ChannelCallback_CallbackByPostServer,
 ) error {
