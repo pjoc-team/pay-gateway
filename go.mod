@@ -31,7 +31,7 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nsqio/go-nsq v1.0.8 // indirect
 	github.com/opentracing/opentracing-go v1.2.0
-	github.com/pjoc-team/pay-proto v0.2.8-0.20201206072143-18997b6d3453
+	github.com/pjoc-team/pay-proto v0.2.8-0.20201206143906-ce6a6b4865bd
 	github.com/pjoc-team/tracing v0.0.0-20201031090328-73d0bfa216ac
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
