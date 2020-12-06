@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/pjoc-team/pay-gateway/pkg/metadata"
 	"github.com/pjoc-team/tracing/logger"
 	"google.golang.org/grpc"
 	"net/http"
@@ -76,4 +77,20 @@ func preflightHandler(w http.ResponseWriter, r *http.Request) {
 	methods := []string{"GET", "HEAD", "POST", "PUT", "DELETE"}
 	w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
 	log.Infof("preflight request for %s", r.URL.Path)
+}
+
+func newGrpcMux() *runtime.ServeMux {
+	// init grpc gateway
+	marshaler := &runtime.JSONPb{
+		EnumsAsInts:  false, // 枚举类使用string返回
+		OrigName:     true,  // 使用json tag里面的字段
+		EmitDefaults: true,  // json返回零值
+	}
+
+	mux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler),
+		runtime.WithMetadata(metadata.ParseHeaderAndQueryToMD),
+		runtime.WithProtoErrorHandler(protoErrorHandler),
+	)
+	return mux
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
 	"google.golang.org/genproto/googleapis/api/httpbody"
+	"google.golang.org/grpc/metadata"
 	"net/http"
 )
 
@@ -17,15 +18,33 @@ type NotifyService struct {
 }
 
 func (svc *NotifyService) CallbackByGet(
-	request *pb.HttpCallbackRequest, response pb.ChannelCallback_CallbackByGetServer,
+	request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByGetServer,
 ) error {
 	log := logger.Log()
 	log.Infof("request: %v", request)
+	head, ok := metadata.FromIncomingContext(stream.Context())
+	if ok {
+		log.Infof("head: %v", head)
+	}
 	resp := &httpbody.HttpBody{
 		ContentType: "text/html",
 		Data:        []byte("get ok"),
 	}
-	response.Send(resp)
+	respHead := metadata.New(
+		map[string]string{
+			"count": fmt.Sprintf("%d", len(resp.Data)),
+		},
+	)
+	err := stream.SendHeader(respHead)
+	if err != nil {
+		log.Errorf("failed to send")
+		return nil
+	}
+
+	err = stream.Send(resp)
+	if err != nil {
+		log.Errorf("failed to send: %v error: %v", resp, err.Error())
+	}
 	return nil
 }
 

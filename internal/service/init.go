@@ -7,10 +7,8 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	_ "github.com/pjoc-team/pay-gateway/pkg/config/file" // import config backend file
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
-	"github.com/pjoc-team/pay-gateway/pkg/metadata"
 	"github.com/pjoc-team/pay-gateway/pkg/util/network"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
@@ -355,7 +353,7 @@ func (s *Server) run() {
 	timeout, cancelFunc := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFunc()
 	for _, shutdown := range s.shutdownFunctions {
-		shutdown(timeout)
+		go shutdown(timeout)
 	}
 
 	s.cancel()
@@ -421,7 +419,9 @@ func (s *Server) initGrpc() error {
 	}
 	for _, info := range s.o.infos {
 		// 注册所有grpc
-		RegisterGrpc(info.Name, info.RegisterGrpcFunc, info.RegisterGatewayFunc, info.RegisterStreamFunc)
+		RegisterGrpc(
+			info.Name, info.RegisterGrpcFunc, info.RegisterGatewayFunc, info.RegisterStreamFunc,
+		)
 		err := s.services.Discovery.RegisterService(
 			info.Name, &discovery.Service{
 				ServiceName: info.Name,
@@ -458,19 +458,7 @@ func (s *Server) initGrpc() error {
 			),
 		),
 	)
-
-	// init grpc gateway
-	marshaler := &runtime.JSONPb{
-		EnumsAsInts:  false, // 枚举类使用string返回
-		OrigName:     true,  // 使用json tag里面的字段
-		EmitDefaults: true,  // json返回零值
-	}
-
-	mux := runtime.NewServeMux(
-		runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler),
-		runtime.WithMetadata(metadata.ParseHeaderAndQueryToMD),
-		runtime.WithProtoErrorHandler(protoErrorHandler),
-	)
+	mux := newGrpcMux()
 
 	// init grpc
 	g.Go(
@@ -530,18 +518,6 @@ func (s *Server) initGrpc() error {
 				log.Errorf("failed to listen: %v error: %v", s.o.listenInternal, err.Error())
 				return err
 			}
-			s.shutdownFunctions = append(
-				s.shutdownFunctions, func(ctx context.Context) {
-					err2 := listen.Close()
-					if err2 != nil {
-						log.Errorf(
-							"failed to close: %v error: %v", s.o.listenInternal, err2.Error(),
-						)
-					} else {
-						log.Infof("http admin closed")
-					}
-				},
-			)
 
 			internalHTTPMux.Handle("/metrics", promhttp.Handler())
 			h := healthInterceptor(healthServer)
@@ -557,9 +533,25 @@ func (s *Server) initGrpc() error {
 				WriteTimeout: 10 * time.Second,
 				Handler:      tracingServerInterceptor(internalHTTPMux),
 			}
+			s.shutdownFunctions = append(
+				s.shutdownFunctions, func(ctx context.Context) {
+					err2 := httpServer.Shutdown(ctx)
+					if err2 != nil && err2 != http.ErrServerClosed {
+						log.Errorf(
+							"failed to close: %v error: %v", s.o.listenInternal, err2.Error(),
+						)
+						return
+					}
+					log.Infof("http admin closed")
+				},
+			)
+
 			err = httpServer.Serve(listen)
+			if err != http.ErrServerClosed {
+				return err
+			}
 			log.Infof("http stopped")
-			return err
+			return nil
 		},
 	)
 
@@ -586,7 +578,7 @@ func (s *Server) initGrpc() error {
 
 			hs := &http.Server{
 				Addr:    fmt.Sprintf(":%d", s.o.listenHTTP),
-				Handler: allowCORS(mux),
+				Handler: h,
 			}
 
 			s.shutdownFunctions = append(
@@ -618,38 +610,56 @@ func (s *Server) initGrpc() error {
 			if err != nil {
 				log.Fatal(err.Error())
 			}
+			s.shutdownFunctions = append(
+				s.shutdownFunctions, func(ctx context.Context) {
+					log.Infof("closing client connection")
+					err2 := conn.Close()
+					if err2 != nil {
+						log.Errorf(
+							"Failed to close a client connection to the gRPC server: %v",
+							err,
+						)
+					}
+					log.Infof("grpc client closed")
+				},
+			)
 
-			httpMux := http.NewServeMux()
-			httpMux.Handle("/", mux)
-			hs := &http.Server{
-				Addr:    fmt.Sprintf(":%d", s.o.listenHTTPGateway),
-				Handler: allowCORS(mux),
-			}
+			grpcMux := newGrpcMux()
 
 			for k, registerGrpc := range GrpcServices {
-				if registerGrpc.RegisterStreamFunc == nil{
+				if registerGrpc.RegisterStreamFunc == nil {
 					log.Warnf("registerGrpc: %v's streaming is nil", registerGrpc)
 					continue
 				}
 				log.Infof("initializing grpc streaming: %v", k)
-				err := registerGrpc.RegisterStreamFunc(ctx, mux, conn)
+				err := registerGrpc.RegisterStreamFunc(ctx, grpcMux, conn)
 				if err != nil {
 					log.Fatalf("failed to register grpc: %v error: %v", k, err.Error())
 				} else {
 					log.Infof("succeed register grpc gateway: %v", k)
 				}
 			}
+			httpMux := http.NewServeMux()
+			httpMux.Handle("/", grpcMux)
+			hs := &http.Server{
+				Addr:    fmt.Sprintf(":%d", s.o.listenHTTPGateway),
+				Handler: httpMux,
+			}
+
 			s.shutdownFunctions = append(
 				s.shutdownFunctions, func(ctx context.Context) {
 					err2 := hs.Shutdown(context.Background())
 					if err2 != nil {
-						log := logger.ContextLog(ctx)
 						log.Error(err2.Error())
 					}
 				},
 			)
 			err2 := hs.ListenAndServe()
-			return err2
+			if err2 != http.ErrServerClosed {
+				return err2
+			}
+			log.Infof("grpc http gateway closed")
+			return nil
 		},
 	)
 	return nil
