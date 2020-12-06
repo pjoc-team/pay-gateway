@@ -2,6 +2,12 @@
 
 all: golint_by_docker golangci_lint_by_docker build
 
+protos: generate_proto
+
+generate_proto:
+	sh scripts/generate_proto.sh  "go" "./" "./go"
+
+
 golangci_lint:
 	bash scripts/golangci_lint.sh
 

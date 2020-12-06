@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pjoc-team/pay-gateway/pkg/metadata"
 	"github.com/pjoc-team/tracing/logger"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
 	"net/http"
 	"strings"
 )
@@ -81,16 +82,37 @@ func preflightHandler(w http.ResponseWriter, r *http.Request) {
 
 func newGrpcMux() *runtime.ServeMux {
 	// init grpc gateway
-	marshaler := &runtime.JSONPb{
-		EnumsAsInts:  false, // 枚举类使用string返回
-		OrigName:     true,  // 使用json tag里面的字段
-		EmitDefaults: true,  // json返回零值
-	}
+	// marshaler := &runtime.JSONPb{
+	// 	EnumsAsInts:  false, // 枚举类使用string返回
+	// 	OrigName:     true,  // 使用json tag里面的字段
+	// 	EmitDefaults: true,  // json返回零值
+	// }
+	// marshalOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler)
+
+	marshalOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard,
+		&runtime.HTTPBodyMarshaler{ // https://grpc-ecosystem.github.io/grpc-gateway/docs/development/v2-migration/
+		Marshaler: &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				Multiline:       false,
+				Indent:          "",
+				AllowPartial:    false,
+				UseProtoNames:   true,
+				UseEnumNumbers:  false,
+				EmitUnpopulated: true,
+				Resolver:        nil,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
+		},
+	})
 
 	mux := runtime.NewServeMux(
-		runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler),
+		marshalOpts,
 		runtime.WithMetadata(metadata.ParseHeaderAndQueryToMD),
-		runtime.WithProtoErrorHandler(protoErrorHandler),
+		runtime.WithErrorHandler(protoErrorHandler),
+		// runtime.WithProtoErrorHandler(protoErrorHandler), // v1
 	)
+
 	return mux
 }

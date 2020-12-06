@@ -402,7 +402,7 @@ func (s *Server) InitLoggerAndTracing(serviceName string) {
 func (s *Server) initGrpc() error {
 	g := s.g
 	ctx := s.Ctx
-	log := logger.Log()
+	log := logger.ContextLog(ctx)
 
 	services, err := s.initServices()
 	if err != nil {

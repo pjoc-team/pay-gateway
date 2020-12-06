@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pjoc-team/tracing/logger"
 	"net/http"
 )
