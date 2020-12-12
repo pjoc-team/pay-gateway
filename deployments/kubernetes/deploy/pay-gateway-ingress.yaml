@@ -14,4 +14,4 @@ spec:
           - path: /v1/web/
             backend:
               serviceName: pay-gateway
-              servicePort: "web-grpc-gateway"
+              servicePort: "web"

@@ -11,5 +11,5 @@ spec:
     - port: 9090
       name: grpc
     - port: 8088
-      name: web-grpc-gateway
+      name: web
   type: ClusterIP
