@@ -2,6 +2,7 @@ name: Builder
 
 on:
   push:
+    paths-ignore: deployments/**
     # Publish `master` as Docker `latest` image.
     branches:
       - "*"
