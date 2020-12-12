@@ -1,0 +1,10 @@
+# /v1/callback/channel/{channel}/account/{account}/order/{order_id}
+POST http://127.0.0.1:8088/v1/callback/channel/test/account/acc1/order/order1
+Content-Type: application/json
+
+{
+  "name": "hello",
+  "age": 18
+}
+
+###
