@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"strings"
 
 	md "google.golang.org/grpc/metadata"
@@ -16,6 +17,22 @@ const (
 
 // MetaData simple meta data.
 type MetaData map[string]string
+
+// GrpcGatewayHeaders get headers from grpc gateway
+func GrpcGatewayHeaders(ctx context.Context) (md.MD, bool) {
+	rs := md.MD{}
+	metadata, ok := md.FromIncomingContext(ctx)
+	if !ok {
+		return nil, ok
+	}
+
+	for k, v := range metadata {
+		if strings.HasPrefix(k, runtime.MetadataPrefix) {
+			rs[strings.TrimPrefix(k, runtime.MetadataPrefix)] = v
+		}
+	}
+	return rs, ok
+}
 
 // FromIncomingContext parse meta data from ctx.
 func FromIncomingContext(ctx context.Context) MetaData {

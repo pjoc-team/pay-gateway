@@ -6,7 +6,6 @@ import (
 	"github.com/pjoc-team/pay-gateway/pkg/metadata"
 	"github.com/pjoc-team/tracing/logger"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/encoding/protojson"
 	"net/http"
 	"strings"
 )
@@ -89,31 +88,11 @@ func newGrpcMux() *runtime.ServeMux {
 	// }
 	// marshalOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler)
 
-	jsonPb := &runtime.JSONPb{
-		MarshalOptions: protojson.MarshalOptions{
-			Multiline:       false,
-			Indent:          "",
-			AllowPartial:    false,
-			UseProtoNames:   true,
-			UseEnumNumbers:  false,
-			EmitUnpopulated: true,
-			Resolver:        nil,
-		},
-		UnmarshalOptions: protojson.UnmarshalOptions{
-			DiscardUnknown: true,
-		},
-	}
-	marshalOpts := runtime.WithMarshalerOption(
-		runtime.MIMEWildcard,
-		&runtime.HTTPBodyMarshaler{
-			// https://grpc-ecosystem.github.io/grpc-gateway/docs/development/v2-migration/
-			Marshaler: jsonPb,
-		},
-	)
+
 
 	mux := runtime.NewServeMux(
-		rawWebOption(jsonPb),
-		marshalOpts,
+		// rawWebOption(jsonPb),
+		httpBodyOption(),
 		runtime.WithMetadata(metadata.ParseHeaderAndQueryToMD),
 		runtime.WithErrorHandler(protoErrorHandler),
 		// runtime.WithProtoErrorHandler(protoErrorHandler), // v1

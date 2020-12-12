@@ -21,14 +21,14 @@ const TraceID = "trace-id"
 type interceptor func(http.Handler) http.Handler
 
 var httpInterceptors = []interceptor{
-	recoverInterceptor, tracingServerInterceptor, allowCORS, customMimeWrapper,
+	recoverInterceptor, tracingServerInterceptor, allowCORS,
 }
 
 // intercept intercept ServeMux
 func intercept(mux *runtime.ServeMux) http.Handler {
 	var h http.Handler = mux
-	for _, interceptor := range httpInterceptors {
-		h = interceptor(h)
+	for _, hi := range httpInterceptors {
+		h = hi(h)
 	}
 	return h
 }

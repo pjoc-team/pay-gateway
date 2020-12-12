@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
+	"github.com/pjoc-team/pay-gateway/pkg/metadata"
+	md "google.golang.org/grpc/metadata"
+
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
 	"google.golang.org/genproto/googleapis/api/httpbody"
-	"google.golang.org/grpc/metadata"
 	"net/http"
 )
 
@@ -23,15 +25,16 @@ func (svc *NotifyService) CallbackByGet(
 ) error {
 	log := logger.Log()
 	log.Infof("request: %v", request)
-	head, ok := metadata.FromIncomingContext(stream.Context())
+	headers, ok := metadata.GrpcGatewayHeaders(stream.Context())
+	// head, ok := metadata.FromIncomingContext(stream.Context())
 	if ok {
-		log.Infof("head: %v", head)
+		log.Infof("head: %v", headers)
 	}
 	resp := &httpbody.HttpBody{
 		ContentType: "text/html",
 		Data:        []byte("get ok"),
 	}
-	respHead := metadata.New(
+	respHead := md.New(
 		map[string]string{
 			"count": fmt.Sprintf("%d", len(resp.Data)),
 		},
@@ -51,15 +54,35 @@ func (svc *NotifyService) CallbackByGet(
 
 // CallbackByPost callback by posts
 func (svc *NotifyService) CallbackByPost(
-	request *pb.HttpCallbackRequest, response pb.ChannelCallback_CallbackByPostServer,
+	request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByPostServer,
 ) error {
 	log := logger.Log()
+	headers, ok := metadata.GrpcGatewayHeaders(stream.Context())
+	// head, ok := metadata.FromIncomingContext(stream.Context())
+	if ok {
+		log.Infof("head: %v", headers)
+	}
+
 	log.Infof("request: %v", request)
 	resp := &httpbody.HttpBody{
 		ContentType: "text/html",
 		Data:        []byte("post ok"),
 	}
-	response.Send(resp)
+	respHead := md.New(
+		map[string]string{
+			"count": fmt.Sprintf("%d", len(resp.Data)),
+		},
+	)
+	err := stream.SendHeader(respHead)
+	if err != nil {
+		log.Errorf("failed to send")
+		return nil
+	}
+	err = stream.Send(resp)
+	if err != nil {
+		log.Errorf("failed to send")
+		return nil
+	}
 	return nil
 }
 
