@@ -151,7 +151,7 @@ func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 		infos: infos,
 	}
 	s := &Server{
-		o:        o,
+		o: o,
 		services: &discovery.Services{},
 	}
 	fs := s.flags()
@@ -410,7 +410,7 @@ func (s *Server) initGrpc() error {
 		return err
 	}
 
-	s.services = services
+	*s.services = *services
 
 	ip, err := network.GetHostIP()
 	if err != nil {

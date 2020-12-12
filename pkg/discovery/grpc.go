@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 )
+
 // ErrGetConnectionFailed get connection error
 var ErrGetConnectionFailed = errors.New("failded to get connection")
 
@@ -32,6 +33,7 @@ type Services struct {
 func NewServices(discovery *Discovery) *Services {
 	s := &Services{
 		Discovery:   discovery,
+		rwLocker:    sync.RWMutex{},
 		servicePool: make(map[string]*sync.Pool),
 	}
 	return s
