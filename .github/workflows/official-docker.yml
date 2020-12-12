@@ -15,8 +15,28 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  gocache:
+    runs-on: ubuntu-latest
+    step:
+      - name: Cache Go modules
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Run cache
+        run: |
+          env | grep GO
+          GOPKG_DIR=$(mkdir -p ~/go/pkg/mod && chmod -R 777 ~/go/pkg/mod && cd ~/go/pkg/mod && pwd)
+          docker run --rm -t -v $GOPKG_DIR:/go/pkg/mod -v $(pwd):/app -w /app golang:latest bash -c "go mod download"
+          mkdir -p gomod
+          cp -R ~/go/pkg/mod/* ./gomod/
   # This workflow contains a single job called "build"
   build:
+    needs:
+      - gocache
+
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -55,20 +75,6 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
-      - name: Cache Go modules
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Run build
-        run: |
-          env | grep GO
-          GOPKG_DIR=$(mkdir -p ~/go/pkg/mod && chmod -R 777 ~/go/pkg/mod && cd ~/go/pkg/mod && pwd)
-          docker run --rm -t -v $GOPKG_DIR:/go/pkg/mod -v $(pwd):/app -w /app golang:latest bash -c "go mod download"
-          mkdir -p gomod
-          cp -R ~/go/pkg/mod/* ./gomod/
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
