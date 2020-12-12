@@ -16,7 +16,7 @@ spec:
         - name: database-service
           image: pjoc/pay-gateway
           command: [ "bash", "-c", "/app/database-service --listen-http=8080 --listen=:9090 --log-level=debug --url=${DSN_URL}" ]
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           env:
             - name: DSN_URL
               valueFrom:
