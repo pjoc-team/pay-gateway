@@ -50,7 +50,7 @@ jobs:
         run: |
           env | grep GO
           GOPKG_DIR=$(mkdir -p ~/go/pkg/mod && cd ~/go/pkg/mod && pwd)
-          docker run --rm -it -v $GOPKG_DIR:/go/pkg/mod -v $(pwd):/app -w /app golang:latest bash -c "go mod download"
+          docker run --rm -t -v $GOPKG_DIR:/go/pkg/mod -v $(pwd):/app -w /app golang:latest bash -c "go mod download"
           mkdir -p gomod
           cp -R ~/go/pkg/mod/* ./gomod/
 
