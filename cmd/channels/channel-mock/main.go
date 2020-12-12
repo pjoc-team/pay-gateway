@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/pjoc-team/pay-gateway/internal/service"
 	"github.com/pjoc-team/pay-gateway/pkg/channels/mock"

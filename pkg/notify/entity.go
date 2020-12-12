@@ -95,7 +95,7 @@ func (g *URLGenerator) GenerateSign(ctx context.Context, body *Body) (str string
 
 // GenerateSignByPayOrderOk sign by ok order
 func (g *URLGenerator) GenerateSignByPayOrderOk(
-	ctx context.Context, payOrderOk pay.PayOrderOk,
+	ctx context.Context, payOrderOk *pay.PayOrderOk,
 ) (str string, err error) {
 	log := logger.ContextLog(ctx)
 
@@ -109,7 +109,7 @@ func (g *URLGenerator) GenerateSignByPayOrderOk(
 
 // GenerateURLByPayOrderOk generate url by ok order
 func (g *URLGenerator) GenerateURLByPayOrderOk(
-	ctx context.Context, payOrderOk pay.PayOrderOk,
+	ctx context.Context, payOrderOk *pay.PayOrderOk,
 ) (url string, form url.Values, err error) {
 	log := logger.ContextLog(ctx)
 

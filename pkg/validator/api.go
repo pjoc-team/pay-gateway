@@ -12,7 +12,7 @@ type GetMerchantConfigFunc func(ctx context.Context, appID string) (*configclien
 
 // Validator validator interface
 type Validator interface {
-	Validate(ctx context.Context, request pay.PayRequest, cfg GetMerchantConfigFunc) error
+	Validate(ctx context.Context, request *pay.PayRequest, cfg GetMerchantConfigFunc) error
 }
 
 // Validators validators
@@ -25,7 +25,8 @@ func RegisterValidator(validator Validator) {
 }
 
 // Validate validate pay request
-func Validate(ctx context.Context, request pay.PayRequest, cfg func(ctx context.Context, appID string) (*configclient.MerchantConfig, error)) error {
+func Validate(ctx context.Context, request *pay.PayRequest, cfg func(ctx context.Context,
+	appID string) (*configclient.MerchantConfig, error)) error {
 	for _, validator := range Validators {
 		if e := validator.Validate(ctx, request, cfg); e != nil {
 			return e

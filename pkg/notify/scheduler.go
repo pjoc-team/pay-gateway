@@ -12,7 +12,7 @@ import (
 type Scheduler struct {
 	ctx         context.Context
 	QueueConfig *QueueConfig       `json:"queue_config" yaml:"QueueConfig"`
-	NotifyCh    chan pay.PayNotify `json:"-" yaml:"-"`
+	NotifyCh    chan *pay.PayNotify `json:"-" yaml:"-"`
 	Concurrency int                `json:"concurrency" yaml:"Concurrency"`
 
 	queue         Queue
@@ -35,7 +35,7 @@ func InitScheduler(
 
 	scheduler = &Scheduler{}
 	scheduler.ctx = ctx
-	scheduler.NotifyCh = make(chan pay.PayNotify, concurrency)
+	scheduler.NotifyCh = make(chan *pay.PayNotify, concurrency)
 	scheduler.done = make(chan bool, 1)
 	scheduler.queue = queue
 	log.Infof("InitScheduler... queue: %v", queue)
@@ -75,7 +75,7 @@ func (s *Scheduler) startConsumer(ctx context.Context) {
 			log.Infof("Pulled notifys: %v", notifys)
 		}
 		for _, notify := range notifys {
-			s.NotifyCh <- *notify
+			s.NotifyCh <- notify
 		}
 	}
 }
@@ -95,7 +95,7 @@ func (s *Scheduler) startThreads(ctx context.Context) {
 			s.stopped = true
 			return
 		case notify := <-s.NotifyCh:
-			s.notify(ctx, &notify)
+			s.notify(ctx, notify)
 		}
 	}
 }

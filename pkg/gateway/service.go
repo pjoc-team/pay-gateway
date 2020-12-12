@@ -56,7 +56,7 @@ func (svc *PayGatewayService) Pay(
 	if err = request.Validate(); err != nil {
 		return BuildParamsErrorResponse(err), nil
 	}
-	if err = validator.Validate(ctx, *request, svc.configClients.GetAppConfig); err != nil {
+	if err = validator.Validate(ctx, request, svc.configClients.GetAppConfig); err != nil {
 		return BuildParamsErrorResponse(err), nil
 	}
 	var cfg *configclient.AppIDChannelConfig

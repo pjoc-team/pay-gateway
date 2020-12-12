@@ -27,7 +27,8 @@ type CheckSignValidator struct {
 }
 
 // Validate implements validator
-func (validator *CheckSignValidator) Validate(ctx context.Context, request pay.PayRequest, cfg validator.GetMerchantConfigFunc) (e error) {
+func (validator *CheckSignValidator) Validate(ctx context.Context, request *pay.PayRequest,
+	cfg validator.GetMerchantConfigFunc) (e error) {
 	paramsString := validator.ParamsCompacter.ParamsToString(request)
 	log := logger.ContextLog(ctx)
 	if log.IsDebugEnabled() {

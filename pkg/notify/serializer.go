@@ -17,7 +17,7 @@ func NewJSONMessageSerializer() *JSONMessageSerializer {
 }
 
 // Serialize serialize
-func (*JSONMessageSerializer) Serialize(notify pay.PayNotify) (string, error) {
+func (*JSONMessageSerializer) Serialize(notify *pay.PayNotify) (string, error) {
 	bytes, e := json.Marshal(notify)
 	if e != nil {
 		return "", e

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"github.com/go-playground/validator/v10"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pjoc-team/pay-gateway/internal/service"
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"

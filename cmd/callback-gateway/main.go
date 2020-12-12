@@ -15,9 +15,6 @@ import (
 
 const serviceName = discovery.ServiceName("callback-gateway")
 
-var (
-	configURL string
-)
 
 func flagSet() *pflag.FlagSet {
 	set := pflag.NewFlagSet(serviceName.String(), pflag.ExitOnError)

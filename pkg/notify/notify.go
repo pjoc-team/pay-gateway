@@ -7,7 +7,6 @@ import (
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/constant"
 	"github.com/pjoc-team/pay-gateway/pkg/date"
-	"github.com/pjoc-team/pay-gateway/pkg/model"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"io/ioutil"
@@ -32,7 +31,7 @@ type Service struct {
 // NewService create notify service
 func NewService(
 	config QueueConfig, dbClient pb.PayDatabaseServiceClient,
-	 clients configclient.ConfigClients,
+	clients configclient.ConfigClients,
 ) (notifyService *Service, err error) {
 	log := logger.Log()
 
@@ -54,7 +53,7 @@ func NewService(
 func (svc *Service) Notify(ctx context.Context, notify *pb.PayNotify) error {
 	log := logger.Log()
 
-	err := svc.NotifyQueue.Push(ctx, *notify)
+	err := svc.NotifyQueue.Push(ctx, notify)
 	if err != nil {
 		log.Errorf("Failed to push to queue! error: %v", err)
 	}
@@ -110,8 +109,12 @@ func (svc *Service) UpdatePayNotifyFail(
 	notify.Status = constant.OrderStatusFailed
 	notify.ErrorMessage = reason.Error()
 	notifyExpression := DefaultNotifyExpression
-	if svc.GatewayConfig.NotifyConfig != nil && svc.GatewayConfig.NotifyConfig.NotifyDelaySecondExpressions != nil {
-		notifyExpression = svc.GatewayConfig.NotifyConfig.NotifyDelaySecondExpressions
+
+	config, err := svc.configClients.GetNotifyConfig(ctx)
+	if err != nil {
+		log.Errorf("failed to find notify! error: %v", err.Error())
+	} else if config.NotifyDelaySecondExpressions != nil {
+		notifyExpression = config.NotifyDelaySecondExpressions
 	}
 	nextTimeStr, err := NextTimeToNotify(notify.FailTimes, notifyExpression)
 	if err != nil {
@@ -151,7 +154,7 @@ func (svc *Service) SendPayNotify(ctx context.Context, notify *pb.PayNotify) (er
 	}
 	log.Infof("Found orderok: %v", payOrderOk)
 
-	url, form, e := svc.URLGenerator.GenerateURLByPayOrderOk(ctx, *payOrderOk)
+	url, form, e := svc.URLGenerator.GenerateURLByPayOrderOk(ctx, payOrderOk)
 	if e != nil {
 		log.Errorf("Failed to generate url! notify: %v error: %v", notify, e.Error())
 		err = e
@@ -170,7 +173,7 @@ func (svc *Service) SendPayNotify(ctx context.Context, notify *pb.PayNotify) (er
 	if resp != nil {
 		defer func() {
 			err2 := resp.Body.Close()
-			if err2 != nil{
+			if err2 != nil {
 				log.Errorf("failed to close body: %v", err2.Error())
 			}
 		}()

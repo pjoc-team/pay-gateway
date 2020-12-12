@@ -51,15 +51,20 @@ func (m *MysqlQueue) Pull(ctx context.Context) (payNotifys []*pay.PayNotify, err
 	payNotifyQuery.NextNotifyTime = date.NowTime()
 	response, err := m.svc.FindPayNotifyLessThenTime(ctx, payNotifyQuery)
 	if err != nil {
-		log.Errorf("Failed to find notify! error: %v", err.Error())
-		return
+		log.Errorf("failed to find notify! error: %v", err.Error())
+		return nil, err
+	}
+	config, err := m.svc.configClients.GetNotifyConfig(ctx)
+	if err != nil{
+		log.Errorf("failed to find notify! error: %v", err.Error())
+		return nil, err
 	}
 	log.Infof("Found notifys: %v", response.PayNotifies)
 	// 更新下一次的更新时间，防止被其他队列拉下来
 	for _, notify := range response.PayNotifies {
 		var nextTimeStr string
 		nextTimeStr, err = NextTimeToNotify(
-			notify.GetFailTimes(), m.svc.GatewayConfig.NotifyConfig.NotifyDelaySecondExpressions,
+			notify.GetFailTimes(), config.NotifyDelaySecondExpressions,
 		)
 		if err != nil {
 			log.Errorf("Failed to get next notify time! error: %v", err.Error())
@@ -80,17 +85,17 @@ func (m *MysqlQueue) Pull(ctx context.Context) (payNotifys []*pay.PayNotify, err
 }
 
 // Push push message
-func (m *MysqlQueue) Push(ctx context.Context, notify pay.PayNotify) (err error) {
+func (m *MysqlQueue) Push(ctx context.Context, notify *pay.PayNotify) (err error) {
 	log := logger.ContextLog(ctx)
 
 	var response *pay.PayNotifyResponse
-	response, err = m.svc.FindPayNotify(ctx, &notify)
+	response, err = m.svc.FindPayNotify(ctx, notify)
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		log.Errorf("Failed to find pay notify! error: %v", err.Error())
 		return
 	} else if err != nil && gorm.IsRecordNotFoundError(err) {
 		var result *pay.ReturnResult
-		if result, err = m.svc.SavePayNotify(ctx, &notify); err != nil {
+		if result, err = m.svc.SavePayNotify(ctx, notify); err != nil {
 			log.Errorf("Failed to save notify! notify: %v error: %v", notify, err.Error())
 			return
 		}

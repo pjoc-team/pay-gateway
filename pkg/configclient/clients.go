@@ -20,6 +20,9 @@ type ConfigClients interface {
 
 	// GetPayConfig 获取支付配置
 	GetPayConfig(ctx context.Context) (*PayConfig, error)
+
+	// GetNotifyConfig notify config
+	GetNotifyConfig(ctx context.Context) (*NotifyConfig, error)
 }
 
 // configClients 所有配置
@@ -189,4 +192,18 @@ func (c *configClients) GetPayConfig(ctx context.Context) (*PayConfig, error) {
 		return nil, err
 	}
 	return payConfig, nil
+}
+
+func (c *configClients) GetNotifyConfig(ctx context.Context) (*NotifyConfig, error) {
+	log := logger.ContextLog(ctx)
+	notifyConfig := &NotifyConfig{}
+	err := c.AppIDChannelConfigServer.UnmarshalGetConfig(ctx, notifyConfig)
+	if err != nil {
+		log.Errorf(
+			"failed to get notify config of error: %v", notifyConfig,
+			err.Error(),
+		)
+		return nil, err
+	}
+	return notifyConfig, nil
 }

@@ -81,7 +81,7 @@ type options struct {
 	flagSet           []*pflag.FlagSet
 	store             string
 	enablePprof       bool
-	inProcessGateway  bool
+	// inProcessGateway  bool
 }
 
 func (o *options) apply(options ...Option) {

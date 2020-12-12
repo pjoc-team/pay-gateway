@@ -14,6 +14,7 @@ type server struct {
 	g  *generator.Generator
 }
 
+
 // ChannelConfig channel config struct
 type ChannelConfig struct {
 	PublicKey  string `json:"public_key" yaml:"publicKey" validate:"required"`
@@ -43,13 +44,13 @@ func (s *server) Pay(ctx context.Context, request *pb.ChannelPayRequest) (
 	return resp, nil
 }
 
-func (s *server) Notify(ctx context.Context, request *pb.NotifyRequest) (
-	*pb.NotifyResponse, error,
-) {
+func (s *server) ChannelNotify(
+	ctx context.Context, request *pb.ChannelNotifyRequest,
+) (*pb.ChannelNotifyResponse, error) {
 	log := logger.ContextLog(ctx)
 	log.Warnf("receive mock pay request: %#v", request)
 
-	resp := &pb.NotifyResponse{}
+	resp := &pb.ChannelNotifyResponse{}
 	resp.Status = pb.PayStatus_SUCCESS
 	return resp, nil
 }
