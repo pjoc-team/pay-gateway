@@ -1,10 +1,12 @@
 # /v1/callback/channel/{channel}/account/{account}/order/{order_id}
-POST http://127.0.0.1:8088/v1/callback/channel/test/account/acc1/order/order1
+POST http://127.0.0.1:8088/v1/callback/channel/channel1/account/acc1/order/order1
 Content-Type: application/json
 
 {
-  "name": "hello",
-  "age": 18
+  "out_trade_no": "123",
+  "pay_amount": 1,
+  "app_id": "1",
+  "sign_type": "RSA",
+  "sign": "123",
+  "order_time": "2020-10-25T15:04:05.999999999+08:00"
 }
-
-###

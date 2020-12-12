@@ -19,7 +19,7 @@ const TraceID = "trace-id"
 
 type interceptor func(http.Handler) http.Handler
 
-var httpInterceptors = []interceptor{recoverInterceptor, tracingServerInterceptor, allowCORS}
+var httpInterceptors = []interceptor{recoverInterceptor, tracingServerInterceptor, allowCORS, customMimeWrapper}
 
 // recoverInterceptor 感知panic错误
 func recoverInterceptor(h http.Handler) http.Handler {
