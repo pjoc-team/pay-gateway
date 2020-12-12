@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: channel-mock
-          image: pjoc/pay-gateway:master
+          image: pjoc/pay-gateway
           command: [ "bash", "-c", "/app/channel-mock --listen-http=:8080 --listen=:9090 --log-level=debug" ]
           imagePullPolicy: Always
       restartPolicy: Always
