@@ -71,37 +71,50 @@ func (*rawJSONPb) NewDecoder(r io.Reader) runtime.Decoder {
 }
 
 func decode(rawData []byte, v interface{}) error {
-	rv := reflect.ValueOf(v)
-
-	if rv.Kind() != reflect.Ptr {
-		return fmt.Errorf("%T is not a pointer", v)
-	}
-	t := rv.Type()
-
-	// rv = rv.Elem()
-	// tp := t
-	switch t {
-	case typeOfHttpBody:
-		// hb := v.(*httpbody.HttpBody)
-		hb := &httpbody.HttpBody{}
-		hb.Data = rawData
-		rv.Elem().Set(reflect.ValueOf(hb).Elem())
-	case typeOfHttpBodyPtr:
-		hb := &httpbody.HttpBody{}
-		hb.Data = rawData
-		rv.Elem().Set(reflect.ValueOf(hb))
-		// rv.Elem().Elem().Set(reflect.ValueOf(hb).Elem())
-	case typeOfBytes:
-		// bts := v.([]byte)
-		// for _, datum := range rawData {
-		// 	bts = append(bts, datum)
-		// }
-		// copy(bts[:], rawData[:])
-		// rv.Set(reflect.ValueOf(rawData))
-		rv.Elem().Set(reflect.ValueOf(rawData))
+	switch vt := v.(type) {
+	case *httpbody.HttpBody:
+		vt.Data = rawData
+	case **httpbody.HttpBody:
+		*vt = &httpbody.HttpBody{
+			Data: rawData,
+		}
+	case *[]byte:
+		*vt = rawData
 	default:
 		return fmt.Errorf("type must be []byte or *httpbody.HttpBody but got %T", v)
 	}
+
+	// rv := reflect.ValueOf(v)
+	//
+	// if rv.Kind() != reflect.Ptr {
+	// 	return fmt.Errorf("%T is not a pointer", v)
+	// }
+	// t := rv.Type()
+	//
+	// // rv = rv.Elem()
+	// // tp := t
+	// switch t {
+	// case typeOfHttpBody:
+	// 	// hb := v.(*httpbody.HttpBody)
+	// 	hb := &httpbody.HttpBody{}
+	// 	hb.Data = rawData
+	// 	rv.Elem().Set(reflect.ValueOf(hb).Elem())
+	// case typeOfHttpBodyPtr:
+	// 	hb := &httpbody.HttpBody{}
+	// 	hb.Data = rawData
+	// 	rv.Elem().Set(reflect.ValueOf(hb))
+	// 	// rv.Elem().Elem().Set(reflect.ValueOf(hb).Elem())
+	// case typeOfBytes:
+	// 	// bts := v.([]byte)
+	// 	// for _, datum := range rawData {
+	// 	// 	bts = append(bts, datum)
+	// 	// }
+	// 	// copy(bts[:], rawData[:])
+	// 	// rv.Set(reflect.ValueOf(rawData))
+	// 	rv.Elem().Set(reflect.ValueOf(rawData))
+	// default:
+	// 	return fmt.Errorf("type must be []byte or *httpbody.HttpBody but got %T", v)
+	// }
 
 	return nil
 }
