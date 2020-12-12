@@ -18,9 +18,25 @@ env:
   IMAGE_NAME: pay-gateway
 
 jobs:
-  gocache:
+#  gocache:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+  # Push image to GitHub Packages.
+  # See also https://docs.docker.com/docker-hub/builds/
+  push:
+#    needs:
+#      - gocache
+    # Ensure test job passes before pushing image.
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
     steps:
+#      - name: Download math result for build job
+#        uses: actions/download-artifact@v1
+#        with:
+#          name: bin
+
       - uses: actions/checkout@v2
       - name: Cache Go modules
         uses: actions/cache@v2
@@ -39,30 +55,6 @@ jobs:
           echo "docker resut: $?"
           mkdir -p gomod
           cp -R ~/go/pkg/mod/* ./gomod/
-  # Push image to GitHub Packages.
-  # See also https://docs.docker.com/docker-hub/builds/
-  push:
-    needs:
-      - gocache
-    # Ensure test job passes before pushing image.
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-
-    steps:
-#      - name: Download math result for build job
-#        uses: actions/download-artifact@v1
-#        with:
-#          name: bin
-
-      - uses: actions/checkout@v2
-
-      - name: Cache Go modules
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
 
       - name: Build image
         run: chmod +x ./build.sh && ./build.sh
