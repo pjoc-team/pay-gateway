@@ -8,6 +8,7 @@ ENV GOPROXY=${GOPROXY}
 ENV BIN=/app/bin
 
 ADD . /tmp
+ADD ./gomod/ /go/pkg/mod
 RUN export REPOSITORY=`cat /tmp/go.mod | grep -E "^module\s[0-9a-zA-Z\./_\-]+" | awk '{print $2}'`; \
     export NAME=`basename $REPOSITORY`; \
     export APP=`basename $REPOSITORY`; \
