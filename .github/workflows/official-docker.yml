@@ -66,5 +66,7 @@ jobs:
             ${{ steps.docker_meta.outputs.tags }}
           build-args: |
           platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          cache-from: type=registry,ref=user/app:latest
+          cache-to: type=inline
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
