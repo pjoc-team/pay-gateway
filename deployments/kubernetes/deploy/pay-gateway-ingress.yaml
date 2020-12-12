@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pay-gateway
+spec:
+  rules:
+    - host: pay-gateway.pjoc.pub
+      http:
+        paths:
+          - path: /
+            backend:
+              service:
+                name: pay-gateway
+                port:
+                  name: grpc-gateway
+          - path: /v1/web/
+            backend:
+              service:
+                name: pay-gateway
+                port:
+                  name: web-grpc-gateway

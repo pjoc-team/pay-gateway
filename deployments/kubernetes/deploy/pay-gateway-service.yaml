@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pay-gateway
+spec:
+  selector:
+    app: pay-gateway
+  ports:
+    - port: 8080
+      name: grpc-gateway
+    - port: 9090
+      name: grpc
+    - port: 8088
+      name: web-grpc-gateway
+  type: ClusterIP
