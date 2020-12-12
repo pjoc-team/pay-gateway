@@ -458,7 +458,6 @@ func (s *Server) initGrpc() error {
 			),
 		),
 	)
-	mux := newGrpcMux()
 
 	// init grpc
 	g.Go(
@@ -555,9 +554,10 @@ func (s *Server) initGrpc() error {
 		},
 	)
 
-	// grpc gateway
+	// in processor grpc gateway
 	g.Go(
 		func() error {
+			mux := newGrpcMux()
 
 			// register grpc gateway services
 			for k, registerGrpc := range GrpcServices {
@@ -570,11 +570,7 @@ func (s *Server) initGrpc() error {
 				}
 			}
 
-			// 注入tracing信息
-			var h http.Handler = mux
-			for _, interceptor := range httpInterceptors {
-				h = interceptor(h)
-			}
+			h := intercept(mux)
 
 			hs := &http.Server{
 				Addr:    fmt.Sprintf(":%d", s.o.listenHTTP),
@@ -599,6 +595,7 @@ func (s *Server) initGrpc() error {
 		},
 	)
 
+	// http grpc gateway
 	g.Go(
 		func() error {
 			log.Infof("grpc http gateway listen %v", s.o.listenHTTPGateway)
@@ -624,7 +621,9 @@ func (s *Server) initGrpc() error {
 				},
 			)
 
-			grpcMux := newGrpcMux()
+			grpcGatewayMux := newGrpcMux()
+
+			h := intercept(grpcGatewayMux)
 
 			for k, registerGrpc := range GrpcServices {
 				if registerGrpc.RegisterStreamFunc == nil {
@@ -632,7 +631,7 @@ func (s *Server) initGrpc() error {
 					continue
 				}
 				log.Infof("initializing grpc streaming: %v", k)
-				err := registerGrpc.RegisterStreamFunc(ctx, grpcMux, conn)
+				err := registerGrpc.RegisterStreamFunc(ctx, grpcGatewayMux, conn)
 				if err != nil {
 					log.Fatalf("failed to register grpc: %v error: %v", k, err.Error())
 				} else {
@@ -640,7 +639,7 @@ func (s *Server) initGrpc() error {
 				}
 			}
 			httpMux := http.NewServeMux()
-			httpMux.Handle("/", grpcMux)
+			httpMux.Handle("/", h)
 			hs := &http.Server{
 				Addr:    fmt.Sprintf(":%d", s.o.listenHTTPGateway),
 				Handler: httpMux,

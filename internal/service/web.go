@@ -21,10 +21,10 @@ const (
 	rawWebContentType = "application/raw-web"
 )
 
-
 var (
-	typeOfBytes    = reflect.TypeOf((*[]byte)(nil))
-	typeOfHttpBody = reflect.TypeOf((*httpbody.HttpBody)(nil))
+	typeOfBytes       = reflect.TypeOf((*[]byte)(nil))
+	typeOfHttpBody    = reflect.TypeOf((*httpbody.HttpBody)(nil))
+	typeOfHttpBodyPtr = reflect.TypeOf((**httpbody.HttpBody)(nil))
 )
 
 func rawWebOption(jsonPb *runtime.JSONPb) runtime.ServeMuxOption {
@@ -86,6 +86,11 @@ func decode(rawData []byte, v interface{}) error {
 		hb := &httpbody.HttpBody{}
 		hb.Data = rawData
 		rv.Elem().Set(reflect.ValueOf(hb).Elem())
+	case typeOfHttpBodyPtr:
+		hb := &httpbody.HttpBody{}
+		hb.Data = rawData
+		rv.Elem().Set(reflect.ValueOf(hb))
+		// rv.Elem().Elem().Set(reflect.ValueOf(hb).Elem())
 	case typeOfBytes:
 		// bts := v.([]byte)
 		// for _, datum := range rawData {
