@@ -5,6 +5,8 @@ name: official-docker
 # events but only for the master branch
 on:
   push:
+    paths-ignore: 
+      - deployments/**
     branches:
       - "*"
     tags:
