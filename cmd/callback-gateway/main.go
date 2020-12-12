@@ -15,7 +15,6 @@ import (
 
 const serviceName = discovery.ServiceName("callback-gateway")
 
-
 func flagSet() *pflag.FlagSet {
 	set := pflag.NewFlagSet(serviceName.String(), pflag.ExitOnError)
 	return set
@@ -37,7 +36,11 @@ func main() {
 	set.AddFlagSet(s.FlagSet)
 	err = set.Parse(os.Args)
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err.Error())
+	}
+	err = s.Init()
+	if err != nil {
+		log.Fatal(err.Error())
 	}
 
 	server, err := callback.NewServer(s.GetDiscoveryServices())
@@ -54,7 +57,7 @@ func main() {
 			return err
 		},
 		RegisterStreamFunc: pay.RegisterChannelCallbackHandler,
-		Name: serviceName.String(),
+		Name:               serviceName.String(),
 	}
 	s.Start(service.WithGrpc(grpcInfo), service.WithFlagSet(set))
 }

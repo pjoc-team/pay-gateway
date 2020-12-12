@@ -66,78 +66,6 @@ type Server struct {
 	cancel            func()
 }
 
-type options struct {
-	listen            int
-	listenHTTP        int
-	listenHTTPGateway int
-	listenInternal    int
-	listenPPROF       int
-	network           string
-	logLevel          string
-
-	name              string
-	infos             []*GrpcInfo
-	shutdownFunctions []ShutdownFunction
-	flagSet           []*pflag.FlagSet
-	store             string
-	enablePprof       bool
-	// inProcessGateway  bool
-}
-
-func (o *options) apply(options ...Option) {
-	for _, option := range options {
-		option.apply(o)
-	}
-}
-
-// Option service option
-type Option interface {
-	apply(opts *options)
-}
-
-// OptionFunc apply func
-type OptionFunc func(*options)
-
-func (o OptionFunc) apply(opts *options) {
-	o(opts)
-}
-
-// ShutdownFunction shutdown func
-type ShutdownFunction func(ctx context.Context)
-
-// WithShutdown 增加关闭函数
-func WithShutdown(function ShutdownFunction) Option {
-	return OptionFunc(
-		func(o *options) {
-			o.shutdownFunctions = append(o.shutdownFunctions, function)
-		},
-	)
-}
-
-// WithGrpc 增加grpc服务
-func WithGrpc(info *GrpcInfo) Option {
-	return OptionFunc(
-		func(o *options) {
-			o.infos = append(o.infos, info)
-		},
-	)
-}
-
-// WithFlagSet add flagset
-func WithFlagSet(flagSet *pflag.FlagSet) Option {
-	return OptionFunc(
-		func(o *options) {
-			o.flagSet = append(o.flagSet, flagSet)
-		},
-	)
-}
-
-// func WithFlagSet(flagSet *pflag.FlagSet) Option {
-//	return func(o *options) {
-//		o.flagSet = append(o.flagSet, flagSet)
-//	}
-// }
-
 // NewServer create server
 func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 	log := logger.Log()
@@ -152,7 +80,7 @@ func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 	}
 	s := &Server{
 		o: o,
-		services: &discovery.Services{},
+		// services: &discovery.Services{},
 	}
 	fs := s.flags()
 	s.FlagSet = fs
@@ -182,6 +110,7 @@ func (s *Server) initServices() (*discovery.Services, error) {
 		logger.Log().Errorf(
 			"failed to init file store of file: %v, error: %v", s.o.store, err.Error(),
 		)
+		return nil, err
 	}
 	disc, err := discovery.NewDiscovery(store)
 	if err != nil {
@@ -221,6 +150,15 @@ func (s *Server) flags() *pflag.FlagSet {
 		flagSet.AddFlagSet(p)
 	}
 	return flagSet
+}
+
+func (s *Server) Init() error {
+	services, err2 := s.initServices()
+	if err2 != nil {
+		return err2
+	}
+	s.services = services
+	return nil
 }
 
 // Start start server
@@ -404,13 +342,13 @@ func (s *Server) initGrpc() error {
 	ctx := s.Ctx
 	log := logger.ContextLog(ctx)
 
-	services, err := s.initServices()
-	if err != nil {
-		log.Errorf("failed to init services, error: %v", err.Error())
-		return err
-	}
+	// services, err := s.initServices()
+	// if err != nil {
+	// 	log.Errorf("failed to init services, error: %v", err.Error())
+	// 	return err
+	// }
 
-	*s.services = *services
+	// *s.services = *services
 
 	ip, err := network.GetHostIP()
 	if err != nil {

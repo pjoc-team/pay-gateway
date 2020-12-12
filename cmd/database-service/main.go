@@ -58,7 +58,11 @@ func main() {
 	set.AddFlagSet(s.FlagSet)
 	err = set.Parse(os.Args)
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err.Error())
+	}
+	err = s.Init()
+	if err != nil{
+		log.Fatal(err.Error())
 	}
 
 	dbService, err := service.NewDatabaseService(s.Ctx, c)
