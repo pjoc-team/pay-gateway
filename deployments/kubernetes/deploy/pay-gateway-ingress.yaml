@@ -1,4 +1,4 @@
-apiVersion: networking.k8s.io/v1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: pay-gateway
@@ -9,13 +9,9 @@ spec:
         paths:
           - path: /
             backend:
-              service:
-                name: pay-gateway
-                port:
-                  name: grpc-gateway
+              serviceName: pay-gateway
+              servicePort: "grpc-gateway"
           - path: /v1/web/
             backend:
-              service:
-                name: pay-gateway
-                port:
-                  name: web-grpc-gateway
+              serviceName: pay-gateway
+              servicePort: "web-grpc-gateway"
