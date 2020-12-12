@@ -12,7 +12,6 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/spf13/pflag"
 	"google.golang.org/grpc"
-	"os"
 	"time"
 )
 
@@ -54,14 +53,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	set := flagSet()
-	set.AddFlagSet(s.FlagSet)
-	err = set.Parse(os.Args)
+	err = s.Init(service.WithFlagSet(flagSet()))
 	if err != nil {
-		log.Fatal(err.Error())
-	}
-	err = s.Init()
-	if err != nil{
 		log.Fatal(err.Error())
 	}
 
@@ -80,5 +73,5 @@ func main() {
 		},
 		Name: serviceName.String(),
 	}
-	s.Start(service.WithGrpc(grpcInfo), service.WithFlagSet(set))
+	s.Start(service.WithGrpc(grpcInfo))
 }

@@ -13,7 +13,6 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/spf13/pflag"
 	"google.golang.org/grpc"
-	"os"
 )
 
 const serviceName = discovery.ServiceName("channel-mock")
@@ -43,17 +42,10 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	set := flagSet()
-	set.AddFlagSet(s.FlagSet)
-	err = set.Parse(os.Args)
+	err = s.Init(service.WithFlagSet(flagSet()))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	err = s.Init()
-	if err != nil{
-		log.Fatal(err.Error())
-	}
-
 	if configURL == "" {
 		log.Fatal("config url is nill")
 	}
@@ -78,5 +70,5 @@ func main() {
 		},
 		Name: serviceName.String(),
 	}
-	s.Start(service.WithGrpc(grpcInfo), service.WithFlagSet(set))
+	s.Start(service.WithGrpc(grpcInfo))
 }

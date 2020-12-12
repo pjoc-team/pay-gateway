@@ -10,7 +10,6 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/spf13/pflag"
 	"google.golang.org/grpc"
-	"os"
 )
 
 const serviceName = discovery.ServiceName("callback-gateway")
@@ -32,13 +31,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	set := flagSet()
-	set.AddFlagSet(s.FlagSet)
-	err = set.Parse(os.Args)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	err = s.Init()
+	err = s.Init(service.WithFlagSet(flagSet()))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -59,5 +52,5 @@ func main() {
 		RegisterStreamFunc: pay.RegisterChannelCallbackHandler,
 		Name:               serviceName.String(),
 	}
-	s.Start(service.WithGrpc(grpcInfo), service.WithFlagSet(set))
+	s.Start(service.WithGrpc(grpcInfo))
 }

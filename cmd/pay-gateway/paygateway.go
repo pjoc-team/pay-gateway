@@ -11,7 +11,6 @@ import (
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/spf13/pflag"
 	"google.golang.org/grpc"
-	"os"
 )
 
 const serviceName = discovery.PayGateway
@@ -21,15 +20,17 @@ var (
 )
 
 type initConfig struct {
-	clusterID string `validate:"required"`
-	concurrency int  `validate:"gt=0"`
+	clusterID   string `validate:"required"`
+	concurrency int    `validate:"gt=0"`
 }
 
 func flagSet() *pflag.FlagSet {
 	set := pflag.NewFlagSet("pay-gateway", pflag.ExitOnError)
 	set.StringVar(&c.clusterID, "cluster-id", "01", "cluster id for multiply cluster")
-	set.IntVar(&c.concurrency, "concurrency", 1_000_000,
-		"max concurrency order request per seconds")
+	set.IntVar(
+		&c.concurrency, "concurrency", 1_000_000,
+		"max concurrency order request per seconds",
+	)
 	return set
 }
 
@@ -55,16 +56,8 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	set := flagSet()
-	set.AddFlagSet(configFlagSet)
-
-	set.AddFlagSet(s.FlagSet)
-	err = set.Parse(os.Args)
+	err = s.Init(service.WithFlagSet(flagSet()), service.WithFlagSet(configFlagSet))
 	if err != nil {
-		log.Fatal(err.Error())
-	}
-	err = s.Init()
-	if err != nil{
 		log.Fatal(err.Error())
 	}
 
@@ -85,5 +78,5 @@ func main() {
 		},
 		Name: serviceName.String(),
 	}
-	s.Start(service.WithGrpc(grpcInfo), service.WithFlagSet(set))
+	s.Start(service.WithGrpc(grpcInfo))
 }

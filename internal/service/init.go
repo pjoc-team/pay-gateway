@@ -90,6 +90,23 @@ func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 	return s, nil
 }
 
+
+// Init prepare
+func (s *Server) Init(options ...Option) error {
+	s.o.apply(options...)
+	services, err2 := s.initServices()
+	if err2 != nil {
+		return err2
+	}
+	s.services = services
+	err2 = s.FlagSet.Parse(os.Args)
+	if err2 != nil{
+		return err2
+	}
+
+	return nil
+}
+
 func wordSepNormalizeFunc(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	from := []string{"_", "."}
 	to := "-"
@@ -152,14 +169,6 @@ func (s *Server) flags() *pflag.FlagSet {
 	return flagSet
 }
 
-func (s *Server) Init() error {
-	services, err2 := s.initServices()
-	if err2 != nil {
-		return err2
-	}
-	s.services = services
-	return nil
-}
 
 // Start start server
 func (s *Server) Start(opts ...Option) {
