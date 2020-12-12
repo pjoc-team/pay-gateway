@@ -34,6 +34,7 @@ func main() {
 	}
 
 	set := flagSet()
+	set.AddFlagSet(s.FlagSet)
 	err = set.Parse(os.Args)
 	if err != nil {
 		panic(err.Error())

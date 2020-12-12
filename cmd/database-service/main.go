@@ -49,17 +49,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	set := flagSet()
-	err = set.Parse(os.Args)
-	if err != nil {
-		panic(err.Error())
-	}
 
 	s, err := service.NewServer(serviceName.String())
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
+	set := flagSet()
+	set.AddFlagSet(s.FlagSet)
+	err = set.Parse(os.Args)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	dbService, err := service.NewDatabaseService(s.Ctx, c)
 	if err != nil {

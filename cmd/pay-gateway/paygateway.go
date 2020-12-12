@@ -50,15 +50,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	set := flagSet()
-	set.AddFlagSet(configFlagSet)
-	err = set.Parse(os.Args)
-	if err != nil {
-		panic(err.Error())
-	}
 	s, err := service.NewServer(serviceName.String())
 	if err != nil {
 		log.Fatal(err.Error())
+	}
+
+	set := flagSet()
+	set.AddFlagSet(configFlagSet)
+
+	set.AddFlagSet(s.FlagSet)
+	err = set.Parse(os.Args)
+	if err != nil {
+		panic(err.Error())
 	}
 
 	payGateway, err := service.NewPayGateway(
