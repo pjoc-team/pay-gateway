@@ -99,7 +99,7 @@ func (s *Server) Init(options ...Option) error {
 		return err2
 	}
 	s.services = services
-	err2 = s.FlagSet.Parse(os.Args)
+	err2 = s.flags().Parse(os.Args)
 	if err2 != nil{
 		return err2
 	}
