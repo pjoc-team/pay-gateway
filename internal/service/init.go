@@ -399,6 +399,7 @@ func (s *Server) initGrpc() error {
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(
+				ValidatorInterceptor(),
 				grpc_prometheus.UnaryServerInterceptor,
 				tracinggrpc.TracingServerInterceptor(), // tracing
 				grpc_recovery.UnaryServerInterceptor(opts...),
