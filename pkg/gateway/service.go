@@ -5,6 +5,7 @@ import (
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/generator"
+	_ "github.com/pjoc-team/pay-gateway/pkg/sign" // import sign validator
 	"github.com/pjoc-team/pay-gateway/pkg/validator"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"

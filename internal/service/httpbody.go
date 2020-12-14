@@ -17,10 +17,10 @@ func (h *httpBodyUnmarshaler) NewDecoder(r io.Reader) runtime.Decoder {
 		func(v interface{}) error {
 			switch vt := v.(type) {
 			case *httpbody.HttpBody:
-				return h.decodeHttpBody(r, vt)
+				return h.decodeHTTPBody(r, vt)
 			case **httpbody.HttpBody:
 				*vt = &httpbody.HttpBody{}
-				return h.decodeHttpBody(r, *vt)
+				return h.decodeHTTPBody(r, *vt)
 			default:
 				return h.Marshaler.NewDecoder(r).Decode(v)
 			}
@@ -29,7 +29,7 @@ func (h *httpBodyUnmarshaler) NewDecoder(r io.Reader) runtime.Decoder {
 	)
 }
 
-func (h *httpBodyUnmarshaler) decodeHttpBody(r io.Reader, body *httpbody.HttpBody) error {
+func (h *httpBodyUnmarshaler) decodeHTTPBody(r io.Reader, body *httpbody.HttpBody) error {
 	rawData, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
