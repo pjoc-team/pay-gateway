@@ -7,6 +7,8 @@ protos: generate_proto
 generate_proto:
 	sh scripts/generate_proto.sh  "go" "./" "./go"
 
+generate_deploy:
+	sh scripts/generate_deploys.sh
 
 golangci_lint:
 	bash scripts/golangci_lint.sh

@@ -226,3 +226,4 @@ test.data
 conf/discovery.json*.prof.svg
 /deployments/kubernetes/mysql-cm.yaml
 /conf/discovery.json
+/generated-deployments

@@ -39,10 +39,11 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Run a multi-line script
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          COMMIT_SHORT=${GITHUB_SHA:0:7}
+          export version="sha-${COMMIT_SHORT}"
+          ./scripts/generate_deploys.sh
       - uses: actions-hub/kubectl@master
         env:
           KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         with:
-          args: apply -f ./deployments/kubernetes/deploy
+          args: apply -f ./generated-deployments
