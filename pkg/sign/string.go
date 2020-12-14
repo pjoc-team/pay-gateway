@@ -1,7 +1,6 @@
 package sign
 
 import (
-	"errors"
 	"fmt"
 	"github.com/fatih/structs"
 	"github.com/golang/protobuf/ptypes"
@@ -153,7 +152,7 @@ func valueFunc(of reflect.Type) fieldValueFunc {
 			}
 			log := logger.Log()
 			log.Fatalf("unknown type: %v", of)
-			return "", errors.New(fmt.Sprintf("unknown type: %v", of))
+			return "", fmt.Errorf("unknown type: %v", of)
 		}
 	case reflect.Int64:
 		return func(value interface{}) (string, error) {
