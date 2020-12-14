@@ -170,7 +170,7 @@ func (c *configClients) GetAppChannelConfig(
 func (c *configClients) GetAppConfig(ctx context.Context, appID string) (*MerchantConfig, error) {
 	log := logger.ContextLog(ctx)
 	merchantConfig := &MerchantConfig{}
-	err := c.AppIDChannelConfigServer.UnmarshalGetConfig(ctx, merchantConfig, appID)
+	err := c.MerchantConfigServer.UnmarshalGetConfig(ctx, merchantConfig, appID)
 	if err != nil {
 		log.Errorf(
 			"failed to get merchant config of appID: %v method: %v error: %v", appID, err.Error(),
@@ -183,7 +183,7 @@ func (c *configClients) GetAppConfig(ctx context.Context, appID string) (*Mercha
 func (c *configClients) GetPayConfig(ctx context.Context) (*PayConfig, error) {
 	log := logger.ContextLog(ctx)
 	payConfig := &PayConfig{}
-	err := c.AppIDChannelConfigServer.UnmarshalGetConfig(ctx, payConfig)
+	err := c.PayConfigServer.UnmarshalGetConfig(ctx, payConfig)
 	if err != nil {
 		log.Errorf(
 			"failed to get pay config of error: %v", payConfig,
@@ -197,7 +197,7 @@ func (c *configClients) GetPayConfig(ctx context.Context) (*PayConfig, error) {
 func (c *configClients) GetNotifyConfig(ctx context.Context) (*NotifyConfig, error) {
 	log := logger.ContextLog(ctx)
 	notifyConfig := &NotifyConfig{}
-	err := c.AppIDChannelConfigServer.UnmarshalGetConfig(ctx, notifyConfig)
+	err := c.NotifyConfigServer.UnmarshalGetConfig(ctx, notifyConfig)
 	if err != nil {
 		log.Errorf(
 			"failed to get notify config of error: %v", notifyConfig,
