@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/blademainer/commons/pkg/field"
 	"github.com/fatih/structs"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"gopkg.in/go-playground/assert.v1"
 	"reflect"
@@ -77,7 +78,13 @@ func TestType(t *testing.T) {
 }
 
 func TestConvert(t *testing.T) {
-	aType := AType{Version: "hello", PayAmount: 23, Sign: "sssss"}
+	tm, _ := time.Parse(time.RFC3339Nano, "2020-12-14T13:03:35.025484056+08:00")
+	pt, _ := ptypes.TimestampProto(tm)
+
+	aType := AType{
+		Version: "hello", PayAmount: 23, Sign: "sssss",
+		Time: pt,
+	}
 	bytes, _ := json.Marshal(aType)
 	fmt.Println("json: ", string(bytes))
 	compacter := NewParamsCompacter(AType{}, "json", []string{"sign"}, true, "&", "=")
@@ -85,28 +92,17 @@ func TestConvert(t *testing.T) {
 	fmt.Println(s)
 	// testutil.AssertEqual(t, "pay_amount=23&version=hello", s)
 
-	fp := &field.Parser{
-		Tag:                 "json",
-		Escape:              false,
-		GroupDelimiter:      '&',
-		PairDelimiter:       '=',
-		Sort:                true,
-		IgnoreNilValueField: true,
-	}
-	marshal, err := fp.Marshal(aType)
-	if err != nil{
-		t.Fatal(err.Error())
-	}
-	fmt.Println(string(marshal))
-	assert.Equal(t, "pay_amount=23&version=hello", s)
+	assert.Equal(t, "pay_amount=23&time=2020-12-14T05:03:35.025484056Z&version=hello", s)
 }
 
 func TestParamsCompacter_ParamsToString(t *testing.T) {
 	now := time.Now()
 
-	aType := AType{Version: "hello", PayAmount: 23, Sign: "sssss", Time: &timestamp.Timestamp{
-		Seconds: int64(now.Second()),
-	}}
+	aType := AType{
+		Version: "hello", PayAmount: 23, Sign: "sssss", Time: &timestamp.Timestamp{
+			Seconds: int64(now.Second()),
+		},
+	}
 	s2 := aType.Time.String()
 	fmt.Println("time: ", s2)
 	bytes, _ := json.Marshal(aType)
@@ -125,8 +121,59 @@ func TestParamsCompacter_ParamsToString(t *testing.T) {
 		IgnoreNilValueField: true,
 	}
 	marshal, err := fp.Marshal(aType)
-	if err != nil{
+	if err != nil {
 		t.Fatal(err.Error())
 	}
 	fmt.Println(string(marshal))
+}
+
+func Benchmark(b *testing.B) {
+	now := time.Now()
+
+	aType := AType{
+		Version: "hello", PayAmount: 23, Sign: "sssss", Time: &timestamp.Timestamp{
+			Seconds: int64(now.Second()),
+		},
+	}
+
+	compacter := NewParamsCompacter(AType{}, "json", []string{"sign"}, true, "&", "=")
+	for i := 0; i < b.N; i++ {
+		compacter.ParamsToString(aType)
+	}
+}
+
+func Test_valueFunc(t *testing.T) {
+	f := valueFunc(reflect.TypeOf(&timestamp.Timestamp{}))
+	s, err := f(
+		ptypes.TimestampNow(),
+	)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	fmt.Println(s)
+
+	f2 := valueFunc(reflect.TypeOf(uint32(13)))
+	s2, err := f2(uint32(12))
+	if err != nil{
+		t.Fatal(err.Error())
+	}
+	fmt.Println(s2)
+	f2 = valueFunc(reflect.TypeOf(int32(13)))
+	s2, err = f2(int32(13))
+	if err != nil{
+		t.Fatal(err.Error())
+	}
+	fmt.Println(s2)
+	f2 = valueFunc(reflect.TypeOf(int64(13)))
+	s2, err = f2(int64(13))
+	if err != nil{
+		t.Fatal(err.Error())
+	}
+	fmt.Println(s2)
+	f2 = valueFunc(reflect.TypeOf(uint64(13)))
+	s2, err = f2(uint64(13))
+	if err != nil{
+		t.Fatal(err.Error())
+	}
+	fmt.Println(s2)
 }

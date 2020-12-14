@@ -1,14 +1,16 @@
 package sign
 
 import (
+	"errors"
 	"fmt"
 	"github.com/fatih/structs"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/pjoc-team/tracing/logger"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
-	"time"
 )
 
 // ParamsCompacter compacter fields to form
@@ -41,34 +43,26 @@ func NewParamsCompacter(
 	}
 
 	fieldNames := make([]string, 0)
+	entityFieldNames := make([]string, 0)
 	fieldTagNameAndFieldNameMap := make(map[string]nameAndValueFunc)
-	instance := structs.New(entityDemoInstance)
-	entityFieldNames := instance.Names()
+	of := reflect.TypeOf(entityDemoInstance)
+	for of.Kind() == reflect.Ptr {
+		of = of.Elem()
+	}
 l:
-	for _, k := range entityFieldNames {
-		field := instance.Field(k)
-		tag := field.Tag(fieldTag)
+	for i := 0; i < of.NumField(); i++ {
+		field := of.Field(i)
+		tag := field.Tag.Get(fieldTag)
 		name, tagOptions := parseTag(tag)
 		log.Infof("field: %v with options: %v", field, tagOptions)
 		if tagOptions.Contains("-") || name == "-" || name == "" {
-			log.Infof("ignore field: %v by tag: %v", k, name)
+			log.Infof("ignore field: %v by tag: %v", field.Name, name)
 			continue
 		}
 
 		nvf := nameAndValueFunc{
-			fieldName: field.Name(),
-			value: func(value interface{}) (string, error) {
-				return fmt.Sprintf("%v", value), nil
-			},
-		}
-
-		tp := reflect.TypeOf(field)
-		switch tp {
-		case reflect.TypeOf(&timestamp.Timestamp{}):
-			nvf.value = func(value interface{}) (string, error) {
-				ts := value.(*timestamp.Timestamp)
-				return ts.AsTime().Format(time.RFC3339Nano), nil
-			}
+			fieldName: field.Name,
+			value:     valueFunc(field.Type),
 		}
 
 		fieldTagNameAndFieldNameMap[name] = nvf
@@ -78,7 +72,45 @@ l:
 			}
 		}
 		fieldNames = append(fieldNames, name)
+		entityFieldNames = append(entityFieldNames, field.Name)
 	}
+	// instance := structs.New(entityDemoInstance)
+	// entityFieldNames := instance.Names()
+	// l:
+	// for _, k := range entityFieldNames {
+	// 	field := instance.Field(k)
+	// 	tag := field.Tag(fieldTag)
+	// 	name, tagOptions := parseTag(tag)
+	// 	log.Infof("field: %v with options: %v", field, tagOptions)
+	// 	if tagOptions.Contains("-") || name == "-" || name == "" {
+	// 		log.Infof("ignore field: %v by tag: %v", k, name)
+	// 		continue
+	// 	}
+	//
+	// 	nvf := nameAndValueFunc{
+	// 		fieldName: field.Name(),
+	// 		value: func(value interface{}) (string, error) {
+	// 			return fmt.Sprintf("%v", value), nil
+	// 		},
+	// 	}
+	//
+	// 	tp := reflect.TypeOf(field)
+	// 	switch tp {
+	// 	case reflect.TypeOf(&timestamp.Timestamp{}):
+	// 		nvf.value = func(value interface{}) (string, error) {
+	// 			ts := value.(*timestamp.Timestamp)
+	// 			return ts.AsTime().Format(time.RFC3339Nano), nil
+	// 		}
+	// 	}
+	//
+	// 	fieldTagNameAndFieldNameMap[name] = nvf
+	// 	for _, ignore := range ignoreKeys {
+	// 		if ignore == name {
+	// 			continue l
+	// 		}
+	// 	}
+	// 	fieldNames = append(fieldNames, name)
+	// }
 	sort.Strings(fieldNames)
 
 	p := ParamsCompacter{}
@@ -92,8 +124,65 @@ l:
 	return p
 }
 
-func valueFunc() {
+func valueFunc(of reflect.Type) fieldValueFunc {
+	switch of.Kind() {
+	case reflect.String:
+		return func(value interface{}) (string, error) {
+			return value.(string), nil
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8,
+		reflect.Uint16, reflect.Uint32:
+		return func(value interface{}) (string, error) {
+			switch t := value.(type) {
+			case int:
+				return strconv.Itoa(t), nil
+			case int8:
+				return strconv.Itoa(int(t)), nil
+			case int16:
+				return strconv.Itoa(int(t)), nil
+			case int32:
+				return strconv.Itoa(int(t)), nil
+			case uint:
+				return strconv.Itoa(int(t)), nil
+			case uint8:
+				return strconv.Itoa(int(t)), nil
+			case uint16:
+				return strconv.Itoa(int(t)), nil
+			case uint32:
+				return strconv.Itoa(int(t)), nil
+			}
+			log := logger.Log()
+			log.Fatalf("unknown type: %v", of)
+			return "", errors.New(fmt.Sprintf("unknown type: %v", of))
+		}
+	case reflect.Int64:
+		return func(value interface{}) (string, error) {
+			return strconv.FormatInt(value.(int64), 10), nil
+		}
+	case reflect.Uint64:
+		return func(value interface{}) (string, error) {
+			return strconv.FormatUint(value.(uint64), 10), nil
+		}
+	case reflect.Bool:
+		return func(value interface{}) (string, error) {
+			if value == true {
+				return "true", nil
+			}
+			return "false", nil
+		}
+	}
 
+	switch of {
+	case reflect.TypeOf(&timestamp.Timestamp{}):
+		return func(value interface{}) (string, error) {
+			ts := value.(*timestamp.Timestamp)
+			return ptypes.TimestampString(ts), nil
+		}
+	default:
+		return func(value interface{}) (string, error) {
+			return fmt.Sprintf("%v", value), nil
+		}
+	}
 }
 
 // ParamsToString convert to string
