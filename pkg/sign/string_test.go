@@ -3,10 +3,13 @@ package sign
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/coreos/etcd/pkg/testutil"
+	"github.com/blademainer/commons/pkg/field"
 	"github.com/fatih/structs"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"gopkg.in/go-playground/assert.v1"
 	"reflect"
 	"testing"
+	"time"
 )
 
 type AType struct {
@@ -50,7 +53,8 @@ type AType struct {
 	// 渠道id（非必须），如果未指定method，系统会根据method来找到可用的channel_id
 	ChannelID string `protobuf:"bytes,19,opt,name=channel_id,json=channelID,proto3" json:"channel_id,omitempty"`
 	// 例如：二维码支付，银联支付等。
-	Method               string   `protobuf:"bytes,98,opt,name=method,proto3" json:"method,omitempty"`
+	Method string               `protobuf:"bytes,98,opt,name=method,proto3" json:"method,omitempty"`
+	Time   *timestamp.Timestamp `protobuf:"bytes,8,opt,name=order_time,json=time,proto3" json:"time,omitempty"`
 }
 
 func TestType(t *testing.T) {
@@ -79,5 +83,50 @@ func TestConvert(t *testing.T) {
 	compacter := NewParamsCompacter(AType{}, "json", []string{"sign"}, true, "&", "=")
 	s := compacter.ParamsToString(aType)
 	fmt.Println(s)
-	testutil.AssertEqual(t, "pay_amount=23&version=hello", s)
+	// testutil.AssertEqual(t, "pay_amount=23&version=hello", s)
+
+	fp := &field.Parser{
+		Tag:                 "json",
+		Escape:              false,
+		GroupDelimiter:      '&',
+		PairDelimiter:       '=',
+		Sort:                true,
+		IgnoreNilValueField: true,
+	}
+	marshal, err := fp.Marshal(aType)
+	if err != nil{
+		t.Fatal(err.Error())
+	}
+	fmt.Println(string(marshal))
+	assert.Equal(t, "pay_amount=23&version=hello", s)
+}
+
+func TestParamsCompacter_ParamsToString(t *testing.T) {
+	now := time.Now()
+
+	aType := AType{Version: "hello", PayAmount: 23, Sign: "sssss", Time: &timestamp.Timestamp{
+		Seconds: int64(now.Second()),
+	}}
+	s2 := aType.Time.String()
+	fmt.Println("time: ", s2)
+	bytes, _ := json.Marshal(aType)
+	fmt.Println("json: ", string(bytes))
+	compacter := NewParamsCompacter(AType{}, "json", []string{"sign"}, true, "&", "=")
+	s := compacter.ParamsToString(aType)
+	fmt.Println(s)
+	// testutil.AssertEqual(t, "pay_amount=23&version=hello", s)
+
+	fp := &field.Parser{
+		Tag:                 "json",
+		Escape:              false,
+		GroupDelimiter:      '&',
+		PairDelimiter:       '=',
+		Sort:                true,
+		IgnoreNilValueField: true,
+	}
+	marshal, err := fp.Marshal(aType)
+	if err != nil{
+		t.Fatal(err.Error())
+	}
+	fmt.Println(string(marshal))
 }

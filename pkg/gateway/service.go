@@ -5,6 +5,7 @@ import (
 	"github.com/pjoc-team/pay-gateway/pkg/configclient"
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/generator"
+	_ "github.com/pjoc-team/pay-gateway/pkg/sign"
 	"github.com/pjoc-team/pay-gateway/pkg/validator"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
@@ -53,9 +54,6 @@ func (svc *PayGatewayService) Pay(
 ) (response *pb.PayResponse, err error) {
 	log := logger.ContextLog(ctx)
 	log.Debugf("new request: %v", request)
-	if err = request.Validate(); err != nil {
-		return BuildParamsErrorResponse(err), nil
-	}
 	if err = validator.Validate(ctx, request, svc.configClients.GetAppConfig); err != nil {
 		return BuildParamsErrorResponse(err), nil
 	}

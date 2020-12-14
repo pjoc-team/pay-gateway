@@ -3,9 +3,12 @@ package sign
 import (
 	"fmt"
 	"github.com/fatih/structs"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/pjoc-team/tracing/logger"
+	"reflect"
 	"sort"
 	"strings"
+	"time"
 )
 
 // ParamsCompacter compacter fields to form
@@ -17,18 +20,28 @@ type ParamsCompacter struct {
 	PairsDelimiter              string
 	KeyValueDelimiter           string
 	FieldTag                    string
-	fieldTagNameAndFieldNameMap map[string]string
+	fieldTagNameAndFieldNameMap map[string]nameAndValueFunc
 }
 
+type nameAndValueFunc struct {
+	fieldName string
+	value     fieldValueFunc
+}
+
+type fieldValueFunc func(value interface{}) (string, error)
+
 // NewParamsCompacter new
-func NewParamsCompacter(entityDemoInstance interface{}, fieldTag string, ignoreKeys []string, ignoreEmptyValue bool, pairsDelimiter string, keyValueDelimiter string) ParamsCompacter {
+func NewParamsCompacter(
+	entityDemoInstance interface{}, fieldTag string, ignoreKeys []string, ignoreEmptyValue bool,
+	pairsDelimiter string, keyValueDelimiter string,
+) ParamsCompacter {
 	log := logger.Log()
 	if fieldTag == "" {
 		fieldTag = "json"
 	}
 
 	fieldNames := make([]string, 0)
-	fieldTagNameAndFieldNameMap := make(map[string]string)
+	fieldTagNameAndFieldNameMap := make(map[string]nameAndValueFunc)
 	instance := structs.New(entityDemoInstance)
 	entityFieldNames := instance.Names()
 l:
@@ -37,11 +50,28 @@ l:
 		tag := field.Tag(fieldTag)
 		name, tagOptions := parseTag(tag)
 		log.Infof("field: %v with options: %v", field, tagOptions)
-		if tagOptions.Contains("-") || name == "-" {
+		if tagOptions.Contains("-") || name == "-" || name == "" {
 			log.Infof("ignore field: %v by tag: %v", k, name)
 			continue
 		}
-		fieldTagNameAndFieldNameMap[name] = field.Name()
+
+		nvf := nameAndValueFunc{
+			fieldName: field.Name(),
+			value: func(value interface{}) (string, error) {
+				return fmt.Sprintf("%v", value), nil
+			},
+		}
+
+		tp := reflect.TypeOf(field)
+		switch tp {
+		case reflect.TypeOf(&timestamp.Timestamp{}):
+			nvf.value = func(value interface{}) (string, error) {
+				ts := value.(*timestamp.Timestamp)
+				return ts.AsTime().Format(time.RFC3339Nano), nil
+			}
+		}
+
+		fieldTagNameAndFieldNameMap[name] = nvf
 		for _, ignore := range ignoreKeys {
 			if ignore == name {
 				continue l
@@ -62,21 +92,33 @@ l:
 	return p
 }
 
+func valueFunc() {
+
+}
+
 // ParamsToString convert to string
 func (p ParamsCompacter) ParamsToString(instance interface{}) string {
 	defer func() {
 		if message := recover(); message != nil {
-			logger.Log().Errorf("failed to convert instance: %#v to form, error: %v", instance, message)
+			logger.Log().Errorf(
+				"failed to convert instance: %#v to form, error: %v", instance, message,
+			)
 		}
 	}()
 	params := make(map[string]string)
 	s := structs.New(instance)
 	for _, tagFieldName := range p.SortedKeyFieldNames {
-		fieldName := p.fieldTagNameAndFieldNameMap[tagFieldName]
-		field := s.Field(fieldName)
+		nameValueFunc := p.fieldTagNameAndFieldNameMap[tagFieldName]
+		field := s.Field(nameValueFunc.fieldName)
 		value := field.Value()
-		stringValue := fmt.Sprintf("%v", value)
-		params[tagFieldName] = stringValue
+		if p.IgnoreEmptyValue && (value == nil || value == "") {
+			continue
+		}
+		fieldValue, err := nameValueFunc.value(value)
+		if err != nil {
+			return ""
+		}
+		params[tagFieldName] = fieldValue
 	}
 
 	return p.BuildMapToString(params)
