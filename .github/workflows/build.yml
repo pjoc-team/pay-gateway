@@ -61,6 +61,10 @@ jobs:
       - name: Build image
         run: chmod +x ./build.sh && ./build.sh
 
+      - name: CodeCov
+        run: bash <(curl -s https://codecov.io/bash)
+
+
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
 
