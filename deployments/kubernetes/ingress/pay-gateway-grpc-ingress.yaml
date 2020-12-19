@@ -8,7 +8,7 @@ metadata:
     nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
 spec:
   rules:
-    - host: pay-gateway-grpc.pjoc.pub
+    - host: pay-gateway-grpc.pay.pjoc.pub
       http:
         paths:
           - path: /
