@@ -15,7 +15,7 @@ spec:
       containers:
         - name: pay-gateway
           image: pjoc/pay-gateway
-          command: [ "bash", "-c", "/app/main --listen-http=8080 --listen=:9090 --log-level=debug" ]
+          command: [ "bash", "-c", "/app/main --listen-http=8080 --listen=9090 --log-level=debug" ]
           imagePullPolicy: Always
       restartPolicy: Always
   selector:
