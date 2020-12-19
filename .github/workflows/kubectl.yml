@@ -4,9 +4,11 @@ name: Kubectl
 
 # Controls when the action will run. 
 on:
-  pull_request:
-    branches: 
-      - master
+  paths-ignore:
+    - deployments/**
+#  pull_request:
+#    branches:
+#      - master
   push:
     branches: 
       - master
