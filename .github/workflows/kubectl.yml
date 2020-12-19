@@ -4,15 +4,15 @@ name: Kubectl
 
 # Controls when the action will run. 
 on:
-  paths-ignore:
-    - deployments/**
 #  pull_request:
 #    branches:
 #      - master
   push:
-    branches: 
+    branches:
       - master
-  
+    paths-ignore:
+      - deployments/**
+
   # Triggers the workflow on push or pull request events but only for the main branch
   #push:
   #  branches: [ main ]
