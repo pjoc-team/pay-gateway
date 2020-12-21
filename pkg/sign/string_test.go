@@ -188,7 +188,3 @@ func Test_intKind(t *testing.T) {
 	i := valueOf.Int()
 	fmt.Println(i)
 }
-
-func convert(){
-
-}
