@@ -177,3 +177,18 @@ func Test_valueFunc(t *testing.T) {
 	}
 	fmt.Println(s2)
 }
+
+
+func Test_intKind(t *testing.T) {
+	type A int32
+	value := A(12)
+	of := reflect.TypeOf(value)
+	fmt.Printf("type: %T kind: %v\n", value, of.Kind())
+	valueOf := reflect.ValueOf(value)
+	i := valueOf.Int()
+	fmt.Println(i)
+}
+
+func convert(){
+
+}

@@ -149,10 +149,10 @@ func valueFunc(of reflect.Type) fieldValueFunc {
 				return strconv.Itoa(int(t)), nil
 			case uint32:
 				return strconv.Itoa(int(t)), nil
+			default:
+				i := reflect.ValueOf(value).Int()
+				return strconv.FormatInt(i, 10), nil
 			}
-			log := logger.Log()
-			log.Fatalf("unknown type: %v", of)
-			return "", fmt.Errorf("unknown type: %v", of)
 		}
 	case reflect.Int64:
 		return func(value interface{}) (string, error) {
@@ -186,13 +186,13 @@ func valueFunc(of reflect.Type) fieldValueFunc {
 
 // ParamsToString convert to string
 func (p ParamsCompacter) ParamsToString(instance interface{}) string {
-	defer func() {
-		if message := recover(); message != nil {
-			logger.Log().Errorf(
-				"failed to convert instance: %#v to form, error: %v", instance, message,
-			)
-		}
-	}()
+	// defer func() {
+	// 	if message := recover(); message != nil {
+	// 		logger.Log().Errorf(
+	// 			"failed to convert instance: %#v to form, error: %v", instance, message,
+	// 		)
+	// 	}
+	// }()
 	params := make(map[string]string)
 	s := structs.New(instance)
 	for _, tagFieldName := range p.SortedKeyFieldNames {

@@ -17,11 +17,15 @@ import (
 )
 
 var (
-	concurrent = flag.Int("concurrent", 10, "concurrent")
-	count      = flag.Int("count", 1000000, "count per thread")
+	concurrent = flag.Int("concurrent", 1, "concurrent")
+	count      = flag.Int("count", 1, "count per thread")
 )
 
 func main() {
+	err := logger.MinReportCallerLevel(logger.DebugLevel)
+	if err != nil {
+		panic(err)
+	}
 
 	log := logger.Log()
 
