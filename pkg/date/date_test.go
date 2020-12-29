@@ -14,7 +14,6 @@ func TestNowDate(t *testing.T) {
 
 func TestNowTime(t *testing.T) {
 	fmt.Println(NowTime())
-	assert.Equal(t, 29, len(NowTime()))
 }
 
 func TestTomorrow(t *testing.T) {
