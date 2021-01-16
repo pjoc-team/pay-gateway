@@ -11,9 +11,9 @@ var regexMap = make(map[string]*regexp.Regexp)
 
 // ReplaceGatewayOrderID replace gateway order id
 func ReplaceGatewayOrderID(urlPattern string, gatewayOrderID string) string {
-	url, e := ReplacePlaceholder(urlPattern, "gateway_order_id", gatewayOrderID)
+	url, e := ReplacePlaceholder(urlPattern, "order_id", gatewayOrderID)
 	if e != nil {
-		return strings.Replace(urlPattern, "{gateway_order_id}", gatewayOrderID, -1)
+		return strings.Replace(urlPattern, "{order_id}", gatewayOrderID, -1)
 	}
 	return url
 }

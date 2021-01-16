@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/sarama v1.27.2
 	github.com/antihax/optional v1.0.0 // indirect
 	github.com/astaxie/beego v1.10.0 // indirect
-	github.com/blademainer/commons v0.0.15-0.20201007122525-b47bc010786c
+	github.com/blademainer/commons v0.0.15-0.20210116101949-f9c9fe06e442
 	github.com/coreos/etcd v3.3.15+incompatible
 	github.com/fatih/structs v1.1.0
 	github.com/fsnotify/fsnotify v1.4.9
