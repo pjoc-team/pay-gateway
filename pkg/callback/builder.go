@@ -3,6 +3,7 @@ package callback
 import (
 	"bytes"
 	"context"
+	"github.com/pjoc-team/pay-gateway/pkg/metadata"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"net/http"
@@ -65,4 +66,41 @@ func GetBody(ctx context.Context, r *http.Request) (data []byte, err error) {
 	log.Debugf("Read byte size: %d", n)
 	return buffer.Bytes(), nil
 
+}
+
+// BuildChannelRequest build channel notify request
+func BuildChannelRequest(
+	ctx context.Context, request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByPostServer,
+) (*pb.HTTPRequest, error) {
+	log := logger.ContextLog(ctx)
+
+	rs := &pb.HTTPRequest{
+	}
+
+	// method
+	m, ok := pb.HTTPRequest_HttpMethod_value[request.HttpMethod]
+	if ok {
+		rs.Method = pb.HTTPRequest_HttpMethod(m)
+	}
+
+	// header
+	headers, ok := metadata.GrpcGatewayHeaders(stream.Context())
+	if ok {
+		log.Debugf("headers: %v", headers)
+		rs.Header = make(map[string]string)
+		for k, v := range headers {
+			rs.Header[k] = v[0]
+		}
+	}
+
+	// body
+	if request.Body != nil {
+		rs.Body = request.Body.Data
+	}
+
+	md := metadata.FromIncomingContext(ctx)
+	// rs.Url = md.GetHTTPPath() + "?" + md.GetHTTPRawQuery()
+	rs.Url = md.GetHTTPURL()
+
+	return rs, nil
 }

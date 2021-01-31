@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
-	"github.com/pjoc-team/pay-gateway/pkg/metadata"
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
@@ -17,6 +16,7 @@ type NotifyService struct {
 	services *discovery.Services
 }
 
+// CallbackByPut callback by put
 func (svc *NotifyService) CallbackByPut(
 	request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByPutServer,
 ) error {
@@ -83,42 +83,6 @@ func (svc *NotifyService) callback(req *pb.HttpCallbackRequest, stream pb.Channe
 	}
 	log.Infof("Notify to channel: %v with result: %v", channelID, notifyResponse)
 	return nil
-}
-
-func BuildChannelRequest(
-	ctx context.Context, request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByPostServer,
-) (*pb.HTTPRequest, error) {
-	log := logger.ContextLog(ctx)
-
-	rs := &pb.HTTPRequest{
-	}
-
-	// method
-	m, ok := pb.HTTPRequest_HttpMethod_value[request.HttpMethod]
-	if ok {
-		rs.Method = pb.HTTPRequest_HttpMethod(m)
-	}
-
-	// header
-	headers, ok := metadata.GrpcGatewayHeaders(stream.Context())
-	if ok {
-		log.Debugf("headers: %v", headers)
-		rs.Header = make(map[string]string)
-		for k, v := range headers {
-			rs.Header[k] = v[0]
-		}
-	}
-
-	// body
-	if request.Body != nil {
-		rs.Body = request.Body.Data
-	}
-
-	md := metadata.FromIncomingContext(ctx)
-	// rs.Url = md.GetHTTPPath() + "?" + md.GetHTTPRawQuery()
-	rs.Url = md.GetHTTPURL()
-
-	return rs, nil
 }
 
 // Notify notify by order id

@@ -82,7 +82,7 @@ mW9/iR9koFHtTzTKhhYIgSWy9EWkQmcyrOKnEPYqMJjMobDJ1AuG`,
 			request.OutTradeNo = g.GenerateID()
 			log.Infof(request.OutTradeNo)
 			request.Method = pb.Method_WEB
-			request.OrderTime = timestamppb.Now()
+			request.OrderTime = timestamppb.Now().String()
 			request.ChannelId = "mock"
 			request.ProductName = "Apple 12"
 			request.ProductDescribe = "Hello jobs"
