@@ -13,6 +13,8 @@ const (
 	remoteIPFromPeer = "remote-ip-from-peer"
 	httpMethod       = "method"
 	httpPath         = "path"
+	httpRawQuery     = "query"
+	httpURL          = "url"
 )
 
 // MetaData simple meta data.
@@ -218,4 +220,20 @@ func (m MetaData) GetHTTPPath() string {
 		return ""
 	}
 	return m[httpPath]
+}
+
+// GetHTTPRawQuery get http raw query from http url.
+func (m MetaData) GetHTTPRawQuery() string {
+	if len(m) == 0 {
+		return ""
+	}
+	return m[httpRawQuery]
+}
+
+// GetHTTPURL get http url.
+func (m MetaData) GetHTTPURL() string {
+	if len(m) == 0 {
+		return ""
+	}
+	return m[httpURL]
 }

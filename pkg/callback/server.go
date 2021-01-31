@@ -3,14 +3,12 @@ package callback
 import (
 	"context"
 	"fmt"
+	"github.com/opentracing/opentracing-go"
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/metadata"
-	md "google.golang.org/grpc/metadata"
-
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
-	"google.golang.org/genproto/googleapis/api/httpbody"
 	"net/http"
 )
 
@@ -19,71 +17,108 @@ type NotifyService struct {
 	services *discovery.Services
 }
 
+func (svc *NotifyService) CallbackByPut(
+	request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByPutServer,
+) error {
+	request.HttpMethod = pb.HTTPRequest_PUT.String()
+	return svc.callback(request, stream)
+}
+
 // CallbackByGet callback by get
 func (svc *NotifyService) CallbackByGet(
 	request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByGetServer,
 ) error {
-	log := logger.Log()
-	log.Infof("request: %v", request)
-	headers, ok := metadata.GrpcGatewayHeaders(stream.Context())
-	// head, ok := metadata.FromIncomingContext(stream.Context())
-	if ok {
-		log.Infof("head: %v", headers)
-	}
-	resp := &httpbody.HttpBody{
-		ContentType: "text/html",
-		Data:        []byte("get ok"),
-	}
-	respHead := md.New(
-		map[string]string{
-			"count": fmt.Sprintf("%d", len(resp.Data)),
-		},
-	)
-	err := stream.SendHeader(respHead)
-	if err != nil {
-		log.Errorf("failed to send")
-		return nil
-	}
-
-	err = stream.Send(resp)
-	if err != nil {
-		log.Errorf("failed to send: %v error: %v", resp, err.Error())
-	}
-	return nil
+	request.HttpMethod = pb.HTTPRequest_GET.String()
+	return svc.callback(request, stream)
 }
 
 // CallbackByPost callback by posts
 func (svc *NotifyService) CallbackByPost(
 	request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByPostServer,
 ) error {
-	log := logger.Log()
-	headers, ok := metadata.GrpcGatewayHeaders(stream.Context())
-	// head, ok := metadata.FromIncomingContext(stream.Context())
-	if ok {
-		log.Infof("head: %v", headers)
+	request.HttpMethod = pb.HTTPRequest_POST.String()
+	return svc.callback(request, stream)
+}
+
+func (svc *NotifyService) callback(req *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByPostServer) error {
+	span := opentracing.StartSpan("callback")
+	defer span.Finish()
+	ctx := opentracing.ContextWithSpan(stream.Context(), span)
+	defer opentracing.SpanFromContext(ctx).Finish()
+
+
+	log := logger.ContextLog(ctx)
+
+	channelID := req.Channel
+	channelAccount := req.Account
+
+	// send to channel client
+	var pubBackClientFunc discovery.PutBackClientFunc
+	client, pubBackClientFunc, e := svc.services.GetChannelClient(ctx, channelID)
+	if e != nil {
+		log.Errorf("Failed to get channel client of channelID: %v! error: %v", channelID, e.Error())
+		return e
+	}
+	if pubBackClientFunc != nil {
+		defer pubBackClientFunc()
+	}
+	request, e := BuildChannelRequest(ctx, req, stream)
+	if e != nil {
+		log.Errorf("Failed to build notify request! error: %v", e.Error())
+		return e
+	}
+	if log.IsDebugEnabled() {
+		log.Debugf("build channel notify request: %v", request)
+	}
+	notifyRequest := &pb.ChannelNotifyRequest{
+		PaymentAccount: channelAccount,
+		Request:        request,
+		Type:           pb.PayType_PAY,
 	}
 
-	log.Infof("request: %v", request)
-	resp := &httpbody.HttpBody{
-		ContentType: "text/html",
-		Data:        []byte("post ok"),
+	notifyResponse, e := client.ChannelNotify(ctx, notifyRequest)
+	if e != nil {
+		log.Errorf("failed to notify with error: %v", e.Error())
+		return e
 	}
-	respHead := md.New(
-		map[string]string{
-			"count": fmt.Sprintf("%d", len(resp.Data)),
-		},
-	)
-	err := stream.SendHeader(respHead)
-	if err != nil {
-		log.Errorf("failed to send")
-		return nil
-	}
-	err = stream.Send(resp)
-	if err != nil {
-		log.Errorf("failed to send")
-		return nil
-	}
+	log.Infof("Notify to channel: %v with result: %v", channelID, notifyResponse)
 	return nil
+}
+
+func BuildChannelRequest(
+	ctx context.Context, request *pb.HttpCallbackRequest, stream pb.ChannelCallback_CallbackByPostServer,
+) (*pb.HTTPRequest, error) {
+	log := logger.ContextLog(ctx)
+
+	rs := &pb.HTTPRequest{
+	}
+
+	// method
+	m, ok := pb.HTTPRequest_HttpMethod_value[request.HttpMethod]
+	if ok {
+		rs.Method = pb.HTTPRequest_HttpMethod(m)
+	}
+
+	// header
+	headers, ok := metadata.GrpcGatewayHeaders(stream.Context())
+	if ok {
+		log.Debugf("headers: %v", headers)
+		rs.Header = make(map[string]string)
+		for k, v := range headers {
+			rs.Header[k] = v[0]
+		}
+	}
+
+	// body
+	if request.Body != nil {
+		rs.Body = request.Body.Data
+	}
+
+	md := metadata.FromIncomingContext(ctx)
+	// rs.Url = md.GetHTTPPath() + "?" + md.GetHTTPRawQuery()
+	rs.Url = md.GetHTTPURL()
+
+	return rs, nil
 }
 
 // Notify notify by order id

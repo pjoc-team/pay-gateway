@@ -32,8 +32,8 @@ require (
 	github.com/nsqio/go-nsq v1.0.8 // indirect
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pjoc-team/base-service v0.2.18
-	github.com/pjoc-team/pay-proto v0.2.8-0.20201212123642-81729e3d91fb
-	github.com/pjoc-team/tracing v0.0.0-20201031090328-73d0bfa216ac
+	github.com/pjoc-team/pay-proto v0.2.8-0.20210131101300-190c7a0468a8
+	github.com/pjoc-team/tracing v0.0.0-20210131093452-72760bc3d144
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.10.0

@@ -94,8 +94,8 @@ func newGrpcMux() *runtime.ServeMux {
 		// rawWebOption(jsonPb),
 		httpBodyOption(),
 		runtime.WithMetadata(metadata.ParseHeaderAndQueryToMD),
-		runtime.WithErrorHandler(protoErrorHandler),
-		// runtime.WithProtoErrorHandler(protoErrorHandler), // v1
+		runtime.WithErrorHandler(errorHandler),
+		// runtime.WithProtoErrorHandler(errorHandler), // v1
 	)
 
 	return mux

@@ -15,6 +15,11 @@ const (
 	Settlement ServiceName = "settlement"
 )
 
+const (
+	// ChannelPrefix channel service name prefix
+	ChannelPrefix = "channel-"
+)
+
 // GetSettlementClient settlement client
 func (s *Services) GetSettlementClient(ctx context.Context) (
 	client pb.SettlementGatewayClient,
@@ -35,7 +40,9 @@ func (s *Services) GetChannelClient(ctx context.Context, id string) (
 	err error,
 ) {
 	_, pubBackClientFunc, err = s.initGrpc(
-		ctx, id, func(conn *grpc.ClientConn) interface{} {
+		ctx,
+		ChannelPrefix + id,
+		func(conn *grpc.ClientConn) interface{} {
 			client = pb.NewPayChannelClient(conn)
 			return client
 		},

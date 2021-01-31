@@ -16,7 +16,7 @@ import (
 )
 
 // TraceID http响应header内返回的traceID
-const TraceID = "trace-id"
+const TraceID = "Trace-Id"
 
 type interceptor func(http.Handler) http.Handler
 

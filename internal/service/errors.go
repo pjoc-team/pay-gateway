@@ -7,8 +7,8 @@ import (
 	"net/http"
 )
 
-// protoErrorHandler 处理proto解析器错误
-func protoErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
+// errorHandler 接收错误
+func errorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
 	log := logger.ContextLog(ctx)
 	log.Errorf("proto error: %v request: %#v", err.Error(), request)
 	marshal, err2 := marshaler.Marshal(err)

@@ -33,5 +33,7 @@ func ParseHeaderAndQueryToMD(_ context.Context, req *http.Request) metadata.MD {
 	// Method, Path
 	m.Set(httpMethod, req.Method)
 	m.Set(httpPath, req.URL.Path)
+	m.Set(httpRawQuery, req.URL.RawQuery)
+	m.Set(httpURL, req.URL.String())
 	return m
 }
