@@ -6,6 +6,7 @@ Content-Type: application/json
   "pay_amount": 1,
   "app_id": "1",
   "sign_type": "RSA",
+  "channel_id": "test",
   "sign": "123",
   "order_time": "2020-10-25T15:04:05.999999999+08:00"
 }

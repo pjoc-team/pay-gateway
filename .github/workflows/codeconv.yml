@@ -1,0 +1,23 @@
+name: Code Coverage
+
+on:
+  push:
+    paths-ignore:
+      - deployments/**
+    # Publish `master` as Docker `latest` image.
+    branches:
+      - "*"
+
+    # Publish `v1.2.3` tags as releases.
+    tags:
+      - v*
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Test With Coverage
+        run: go test -v  -coverprofile=coverage.txt -covermode=atomic ./...
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1

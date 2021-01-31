@@ -1,2 +1,2 @@
-notifyURLPattern: "http://pay.pjoc.pub/notify/{gateway_order_id}"
+notifyURLPattern: "http://pay.pjoc.pub/v1/web/callback/channel/{channel}/account/{account}/order/{order_id}"
 returnURLPattern: "http://pay.pjoc.pub/return/{gateway_order_id}"

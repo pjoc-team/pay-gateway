@@ -8,18 +8,20 @@ nowDate="$(date +'%Y-%m-%dT%H:%M:%S+08:00')"
 now="$(date +'%Y%m%d%H%M%S')"
 orderID="${now}`date +%s%N | awk '{print substr($0,10,9)}'`$RANDOM"
 channelID="mock"
-method="WEB"
+method="1"
 product_name="apple"
 product_describe="apple"
 user_ip="127.0.0.1"
 #ext_json='{\"service_type\":\"jdpay_scan\"}'
 ext_json='{\"service_type\":\"direct_pay\"}'
 
-json='{"pay_amount":1, "out_trade_no": "'${orderID}'", "order_time":"'${nowDate}'", "app_id":"1", "channel_id":"'${channelID}'", "sign_type":"RSA", "method":"'${method}'", "product_name":"'$product_name'", "product_describe":"'$product_describe'", "user_ip":"'$user_ip'", "ext_json":"'$ext_json'"}'
+json='{"pay_amount":1, "out_trade_no": "'${orderID}'", "order_time":"'${nowDate}'", "app_id":"1", "channel_id":"'${channelID}'", "sign_type":"RSA", "method":'${method}', "product_name":"'$product_name'", "product_describe":"'$product_describe'", "user_ip":"'$user_ip'", "ext_json":"'$ext_json'"}'
+# app_id=1&channel_id=mock&ext_json={"service_type":"direct_pay"}&method=0&order_time=2021-01-16T17:45:38+08:00&out_trade_no=202101161745388N12679&pay_amount=1&product_describe=apple&product_name=apple&sign_type=RSA&user_ip=127.0.0.1
+# app_id=1&channel_id=mock&ext_json={"service_type":"direct_pay"}&method=WEB&order_time=2021-01-16T17:45:38+08:00&out_trade_no=202101161745388N12679&pay_amount=1&product_describe=apple&product_name=apple&sign_type=RSA&user_ip=127.0.0.1
 echo "json==$json"
 echo `$curDir/sign -j "$json" -d true` > $curDir/${orderID}.tmp
 sign="`cat $curDir/${orderID}.tmp | awk '{print $NF}'`"
 echo "sign===$sign"
-json='{"pay_amount":1, "out_trade_no": "'${orderID}'", "order_time":"'${nowDate}'", "app_id":"1", "channel_id":"'${channelId}'", "sign_type":"RSA", "method":"'${method}'", "product_name":"'$product_name'", "product_describe":"'$product_describe'", "user_ip":"'$user_ip'", "ext_json":"'$ext_json'", "sign":"'$sign'"}'
+json='{"pay_amount":1, "out_trade_no": "'${orderID}'", "order_time":"'${nowDate}'", "app_id":"1", "channel_id":"'${channelID}'", "sign_type":"RSA", "method":'${method}', "product_name":"'$product_name'", "product_describe":"'$product_describe'", "user_ip":"'$user_ip'", "ext_json":"'$ext_json'", "sign":"'$sign'"}'
 echo "final json: $json"
 curl -vd "$json" "http://127.0.0.1:8080/v1/pay/${method}"
