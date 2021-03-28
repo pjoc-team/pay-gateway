@@ -7,7 +7,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	_ "github.com/pjoc-team/pay-gateway/pkg/config/file" // import config backend file
+	_ "github.com/pjoc-team/pay-gateway/pkg/config/backend/file" // import config backend file
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
 	"github.com/pjoc-team/pay-gateway/pkg/util/network"
 	"github.com/pjoc-team/tracing/logger"

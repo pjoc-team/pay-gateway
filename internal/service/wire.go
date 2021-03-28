@@ -2,7 +2,7 @@
 
 package service
 
-//go:generate wire gen .
+//go:generate go run github.com/google/wire/cmd/wire gen .
 
 import (
 	"context"

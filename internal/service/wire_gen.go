@@ -17,12 +17,12 @@ import (
 )
 
 import (
-	_ "github.com/pjoc-team/pay-gateway/pkg/config/file"
+	_ "github.com/pjoc-team/pay-gateway/pkg/config/backend/file"
+	_ "net/http/pprof"
 )
 
 // Injectors from wire.go:
 
-// NewPayGateway create pay gateway service
 func NewPayGateway(configclients configclient.ConfigClients, clusterID string, concurrency int, services *discovery.Services) (pay.PayGatewayServer, error) {
 	payGatewayServer, err := gateway.NewPayGateway(configclients, clusterID, concurrency, services)
 	if err != nil {
@@ -31,7 +31,6 @@ func NewPayGateway(configclients configclient.ConfigClients, clusterID string, c
 	return payGatewayServer, nil
 }
 
-// NewPayGateway create pay gateway service
 func NewDatabaseService(ctx context.Context, config *db.MysqlConfig) (pay.PayDatabaseServiceServer, error) {
 	gormDB, err := db.InitDb(ctx, config)
 	if err != nil {
