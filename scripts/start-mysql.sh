@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export name="mysql"
+export name="pay-mysql"
 
 [ -n "$(docker ps -a -f name=${name} | grep ${name} | awk '{print $NF}' | grep -w ${name})" ] && echo "${name} is running!" && exit 0
 
