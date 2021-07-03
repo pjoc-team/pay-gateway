@@ -1,8 +1,8 @@
 # pay-gateway
 
-A pay system implements by GO.
+A pay system implements by GO. 
 
-基于GO实现的支付系统。文档：https://pjoc.pub/
+Blog: https://pjoc.pub/
 
 [![License](https://img.shields.io/github/license/pjoc-team/pay-gateway.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Stars](https://img.shields.io/github/stars/pjoc-team/pay-gateway.svg)](https://github.com/pjoc-team/pay-gateway/stargazers)
@@ -24,7 +24,7 @@ A pay system implements by GO.
 ## Docs
 
 - [swagger-api](https://pjoc.pub/pay-proto)
-- [docs](https://pjoc.pub/)
+- [docs](https://pjoc.pub/pay/design/architecture/)
 
 
 ## Technology
@@ -40,7 +40,7 @@ A pay system implements by GO.
 <tr>
     <td align="center">
         <a href="https://github.com/blademainer">
-            <img src="https://avatars0.githubusercontent.com/u/3396459?v=4" width="100;" alt="blademainer"/>
+            <img src="https://avatars.githubusercontent.com/u/3396459?v=4" width="100;" alt="blademainer"/>
             <br />
             <sub><b>Blademainer</b></sub>
         </a>
