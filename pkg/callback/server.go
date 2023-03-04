@@ -3,15 +3,16 @@ package callback
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
-	"github.com/pjoc-team/pay-gateway/pkg/metadata"
+	"github.com/pjoc-team/pay-gateway/pkg/grpc/metadata"
 	md "google.golang.org/grpc/metadata"
 
 	pb "github.com/pjoc-team/pay-proto/go"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
 	"google.golang.org/genproto/googleapis/api/httpbody"
-	"net/http"
 )
 
 // NotifyService notify service

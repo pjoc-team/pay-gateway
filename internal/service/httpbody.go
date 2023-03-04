@@ -1,11 +1,11 @@
 package service
 
 import (
+	"io"
+
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/protobuf/encoding/protojson"
-	"io"
-	"io/ioutil"
 )
 
 type httpBodyUnmarshaler struct {
@@ -30,7 +30,7 @@ func (h *httpBodyUnmarshaler) NewDecoder(r io.Reader) runtime.Decoder {
 }
 
 func (h *httpBodyUnmarshaler) decodeHTTPBody(r io.Reader, body *httpbody.HttpBody) error {
-	rawData, err := ioutil.ReadAll(r)
+	rawData, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}

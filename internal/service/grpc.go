@@ -2,12 +2,13 @@ package service
 
 import (
 	"context"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/pjoc-team/pay-gateway/pkg/metadata"
-	"github.com/pjoc-team/tracing/logger"
-	"google.golang.org/grpc"
 	"net/http"
 	"strings"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/pjoc-team/pay-gateway/pkg/grpc/metadata"
+	"github.com/pjoc-team/tracing/logger"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -87,8 +88,6 @@ func newGrpcMux() *runtime.ServeMux {
 	// 	EmitDefaults: true,  // json返回零值
 	// }
 	// marshalOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler)
-
-
 
 	mux := runtime.NewServeMux(
 		// rawWebOption(jsonPb),

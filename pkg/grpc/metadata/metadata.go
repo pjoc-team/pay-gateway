@@ -2,8 +2,9 @@ package metadata
 
 import (
 	"context"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"strings"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
 	md "google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
