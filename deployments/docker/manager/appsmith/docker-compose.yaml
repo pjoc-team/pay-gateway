@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  appsmith:
+    image: appsmith/appsmith-ce:latest
+    ports:
+      - "8080:80"
+    environment:
+      - DATABASE_URL=mongodb://mongo:27017/appsmith
+      - APPSMITH_ENCRYPTION_PASSWORD=YOUR_ENCRYPTION_PASSWORD_HERE
+      - APPSMITH_JWT_SIGNING_KEY=YOUR_JWT_SIGNING_KEY_HERE
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:4.4.9
+    volumes:
+      - ./mongo-data:/data/db

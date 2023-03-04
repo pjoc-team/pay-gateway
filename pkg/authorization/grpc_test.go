@@ -1,8 +1,13 @@
 package authorization
 
 import (
+	"context"
+	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	mock_authorization "github.com/pjoc-team/pay-gateway/pkg/authorization/mock"
 )
 
 func Test_parseAuthData(t *testing.T) {
@@ -40,6 +45,67 @@ func Test_parseAuthData(t *testing.T) {
 				}
 				if !reflect.DeepEqual(got, tt.want) {
 					t.Errorf("parseAuthInfo() got = %v, want %v", got, tt.want)
+				}
+			},
+		)
+	}
+}
+
+func Test_authInterceptor_verifyAuthorization(t *testing.T) {
+	httpBody := `{"order_id": "123"}`
+	merchantID := "m1"
+	serialNO := "s1"
+	certificate, err := GenerateCertificate()
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(certificate.SerialNumber)
+
+	ctrl := gomock.NewController(t)
+	manager := mock_authorization.NewMockCertificateManager(ctrl)
+	manager.EXPECT().GetMerchantCertificate(context.TODO(), merchantID, serialNO).Return(certificate, nil)
+
+	type fields struct {
+		certificateManager CertificateManager
+	}
+	type args struct {
+		ctx             context.Context
+		authHeader      string
+		httpMethod      string
+		httpPath        string
+		httpRequestBody []byte
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "",
+			fields: fields{
+				certificateManager: nil,
+			},
+			args: args{
+				ctx:             nil,
+				authHeader:      "",
+				httpMethod:      "",
+				httpPath:        "",
+				httpRequestBody: []byte(httpBody),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(
+			tt.name, func(t *testing.T) {
+				a := &authInterceptor{
+					certificateManager: tt.fields.certificateManager,
+				}
+				if err := a.verifyAuthorization(
+					tt.args.ctx, tt.args.authHeader, tt.args.httpMethod, tt.args.httpPath, tt.args.httpRequestBody,
+				); (err != nil) != tt.wantErr {
+					t.Errorf("verifyAuthorization() error = %v, wantErr %v", err, tt.wantErr)
 				}
 			},
 		)

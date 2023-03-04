@@ -5,7 +5,6 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"net/url"
@@ -24,27 +23,14 @@ import (
 )
 
 const authMethodHeader = "PJOCPAY-SHA256-RSA2048"
-const timestampHeader = "timestamp"
-const nonceHeader = "nonce"
-const signHeader = "signature"
-const SerialNoHeader = "serial_no"
 
 type authInterceptor struct {
-	apiKey          string // 微信支付分配给商户的apiKey
-	apiSecret       string // 微信支付分配给商户的apiSecret
-	mchID           string // 微信支付分配给商户的mchID
-	serialNumber    string // 商户证书序列号
-	privateKey      []byte // 商户私钥
-	certificateList []*x509.Certificate
+	certificateManager CertificateManager
 }
 
-func newAuthInterceptor(apiKey, apiSecret, mchID, serialNumber string, privateKey []byte) *authInterceptor {
+func newAuthInterceptor(certificateManager CertificateManager) *authInterceptor {
 	return &authInterceptor{
-		apiKey:       apiKey,
-		apiSecret:    apiSecret,
-		mchID:        mchID,
-		serialNumber: serialNumber,
-		privateKey:   privateKey,
+		certificateManager: certificateManager,
 	}
 }
 
@@ -55,36 +41,9 @@ func (a *authInterceptor) UnaryServerInterceptor(
 	md := metadata.FromIncomingContext(ctx)
 	authHeader := md.GetAuthorization()
 	if authHeader == "" {
+		log.Errorf("failed to parse auth header")
 		return nil, status.Errorf(codes.Unauthenticated, "authorization token is not provided")
 	}
-
-	authFields := strings.Split(authHeader, " ")
-	if len(authFields) != 2 || authFields[0] != authMethodHeader {
-		return nil, status.Errorf(codes.Unauthenticated, "invalid authorization token")
-	}
-
-	// 解析Authorization头部的值
-	authData, err := url.QueryUnescape(authFields[1])
-	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "failed to decode authorization data")
-	}
-
-	authInfo, err := parseAuthInfo(authData)
-	if err != nil {
-		log.Errorf("failed to parse auth info: %v, error: %v", authData, err.Error())
-		return nil, err
-	}
-
-	timestamp, err := strconv.ParseInt(authInfo.Timestamp, 10, 64)
-	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "invalid timestamp")
-	}
-
-	// 判断请求是否过期
-	if time.Now().Unix()-timestamp > 300 {
-		return nil, status.Errorf(codes.Unauthenticated, "authorization token has expired")
-	}
-
 	// 从请求中获取body
 	body, ok := ctx.Value(http.ContextHttpRequestBody).([]byte)
 	if !ok {
@@ -94,6 +53,45 @@ func (a *authInterceptor) UnaryServerInterceptor(
 	method, ok := ctx.Value(http.ContextHttpRequestMethod).(string)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "failed to get request method")
+	}
+	err := a.verifyAuthorization(ctx, authHeader, method, info.FullMethod, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return handler(ctx, req)
+}
+
+func (a *authInterceptor) verifyAuthorization(
+	ctx context.Context, authHeader string, httpMethod string, httpPath string, httpRequestBody []byte,
+) error {
+	log := logger.ContextLog(ctx)
+
+	authFields := strings.Split(authHeader, " ")
+	if len(authFields) != 2 || authFields[0] != authMethodHeader {
+		return status.Errorf(codes.Unauthenticated, "invalid authorization token")
+	}
+
+	// 解析Authorization头部的值
+	authData, err := url.QueryUnescape(authFields[1])
+	if err != nil {
+		return status.Errorf(codes.Unauthenticated, "failed to decode authorization data")
+	}
+
+	authInfo, err := parseAuthInfo(authData)
+	if err != nil {
+		log.Errorf("failed to parse auth info: %v, error: %v", authData, err.Error())
+		return err
+	}
+
+	timestamp, err := strconv.ParseInt(authInfo.Timestamp, 10, 64)
+	if err != nil {
+		return status.Errorf(codes.Unauthenticated, "invalid timestamp")
+	}
+
+	// 判断请求是否过期
+	if time.Now().Unix()-timestamp > 300 {
+		return status.Errorf(codes.Unauthenticated, "authorization token has expired")
 	}
 
 	// 构造待签名字符串
@@ -105,30 +103,23 @@ func (a *authInterceptor) UnaryServerInterceptor(
 	//					  请求时间戳\n
 	//					  请求随机串\n
 	//					  请求报文主体\n
-	signStr := fmt.Sprintf("%s\n%s\n%d\n%s\n%s\n", method, info.FullMethod, timestamp, authInfo.Nonce, body)
+	signStr := fmt.Sprintf("%s\n%s\n%d\n%s\n%s\n", httpMethod, httpPath, timestamp, authInfo.Nonce, httpRequestBody)
 
 	// 计算签名
 	signatureBytes, err := base64.StdEncoding.DecodeString(authInfo.Signature)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "failed to decode signature: %v", err)
+		return status.Errorf(codes.Unauthenticated, "failed to decode signature: %v", err)
 	}
-	var cert *x509.Certificate
-	for _, c := range a.certificateList {
-		if c.SerialNumber.String() == a.serialNumber {
-			cert = c
-			break
-		}
-	}
-	if cert == nil {
-		return nil, status.Errorf(codes.Unauthenticated, "certificate not found")
+	cert, err := a.certificateManager.GetMerchantCertificate(ctx, authInfo.MerchantID, authInfo.SerialNo)
+	if err != nil {
+		return status.Errorf(codes.Unauthenticated, "certificate not found")
 	}
 	hashed := sha256.Sum256([]byte(signStr))
 	err = rsa.VerifyPKCS1v15(cert.PublicKey.(*rsa.PublicKey), crypto.SHA256, hashed[:], signatureBytes)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "invalid signature: %v", err)
+		return status.Errorf(codes.Unauthenticated, "invalid signature: %v", err)
 	}
-
-	return handler(ctx, req)
+	return nil
 }
 
 var p = &field.Parser{
@@ -147,7 +138,7 @@ func parseAuthInfo(authData string) (*AuthInfo, error) {
 		if len(parts) != 2 {
 			return nil, status.Errorf(codes.Unauthenticated, "invalid authorization data format")
 		}
-		authParams[parts[0]] = []string{strings.ReplaceAll(parts[1], "\"", "")}
+		authParams[parts[0]] = []string{strings.Trim(parts[1], "\"")}
 	}
 	auth := &AuthInfo{}
 	err := p.Unmarshal(auth, authParams)
