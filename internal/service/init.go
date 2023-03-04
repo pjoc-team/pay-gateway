@@ -3,12 +3,27 @@ package service
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"net"
+	"net/http"
+	_ "net/http/pprof" // import pprof
+	"net/url"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
+	_ "github.com/pjoc-team/pay-gateway/pkg/config/file" // import config backend file
+
 	grpcdialer "github.com/blademainer/commons/pkg/grpc"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	_ "github.com/pjoc-team/pay-gateway/pkg/config/file" // import config backend file
 	"github.com/pjoc-team/pay-gateway/pkg/discovery"
+	"github.com/pjoc-team/pay-gateway/pkg/grpc/interceptors"
+	recover2 "github.com/pjoc-team/pay-gateway/pkg/grpc/interceptors/recover"
+	interceptortracing "github.com/pjoc-team/pay-gateway/pkg/grpc/interceptors/tracing"
 	"github.com/pjoc-team/pay-gateway/pkg/util/network"
 	"github.com/pjoc-team/tracing/logger"
 	"github.com/pjoc-team/tracing/tracing"
@@ -21,16 +36,6 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
-	"math/rand"
-	"net"
-	"net/http"
-	_ "net/http/pprof" // import pprof
-	"net/url"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
-	"time"
 )
 
 // var (
@@ -90,7 +95,6 @@ func NewServer(name string, infos ...*GrpcInfo) (*Server, error) {
 	return s, nil
 }
 
-
 // Init prepare
 func (s *Server) Init(options ...Option) error {
 	s.o.apply(options...)
@@ -100,7 +104,7 @@ func (s *Server) Init(options ...Option) error {
 	}
 	s.services = services
 	err2 = s.flags().Parse(os.Args)
-	if err2 != nil{
+	if err2 != nil {
 		return err2
 	}
 
@@ -168,7 +172,6 @@ func (s *Server) flags() *pflag.FlagSet {
 	}
 	return flagSet
 }
-
 
 // Start start server
 func (s *Server) Start(opts ...Option) {
@@ -391,7 +394,7 @@ func (s *Server) initGrpc() error {
 
 	// 自定义错误处理
 	opts := []grpc_recovery.Option{
-		grpc_recovery.WithRecoveryHandlerContext(customRecoverFunc),
+		grpc_recovery.WithRecoveryHandlerContext(recover2.CustomRecoverFunc),
 	}
 
 	// init grpc server
@@ -478,7 +481,7 @@ func (s *Server) initGrpc() error {
 				Addr:         fmt.Sprintf(":%d", s.o.listenInternal),
 				ReadTimeout:  10 * time.Second,
 				WriteTimeout: 10 * time.Second,
-				Handler:      tracingServerInterceptor(internalHTTPMux),
+				Handler:      interceptortracing.ServerInterceptor(internalHTTPMux),
 			}
 			s.shutdownFunctions = append(
 				s.shutdownFunctions, func(ctx context.Context) {
@@ -518,7 +521,7 @@ func (s *Server) initGrpc() error {
 				}
 			}
 
-			h := intercept(mux)
+			h := interceptors.Intercept(mux)
 
 			hs := &http.Server{
 				Addr:    fmt.Sprintf(":%d", s.o.listenHTTP),
@@ -571,7 +574,7 @@ func (s *Server) initGrpc() error {
 
 			grpcGatewayMux := newGrpcMux()
 
-			h := intercept(grpcGatewayMux)
+			h := interceptors.Intercept(grpcGatewayMux)
 
 			for k, registerGrpc := range GrpcServices {
 				if registerGrpc.RegisterStreamFunc == nil {
