@@ -1,0 +1,71 @@
+@startuml
+' define
+cloud Kubernetes{
+  package Core {
+    node PayGateway
+    node QueryGateway
+    node RefundGateway
+    node TransferGateway
+    node CallbackGateway
+    node NotifyGateway
+    node PayDatabase
+  }
+
+  package Channels {
+    node Channel...
+    node ChannelWechat
+    node ChannelAlipay
+  }
+
+  node PayManagerSystem
+  node OrderMonitor
+  node PayCenter
+
+}
+
+database mysql
+
+'cloud EtcdCloud{
+'  storage etcd1
+'  storage etcd2
+'  storage etcd3
+'}
+
+' === relations ===
+'PayCenter ..> EtcdCloud
+'PayGateway ..> EtcdCloud
+'QueryGateway ..> EtcdCloud
+'RefundGateway ..> EtcdCloud
+'TransferGateway ..> EtcdCloud
+'PayDatabase ..> EtcdCloud
+'ChannelWechat ..> EtcdCloud
+'ChannelAlipay ..> EtcdCloud
+'Channel... ..> EtcdCloud
+
+PayCenter -> PayGateway
+
+PayGateway ---> PayDatabase
+PayGateway ...> Channels
+
+QueryGateway ---> PayDatabase
+QueryGateway ...> Channels
+
+RefundGateway ---> PayDatabase
+RefundGateway ...> Channels
+
+CallbackGateway ---> PayDatabase
+CallbackGateway ...> Channels
+CallbackGateway -> NotifyGateway
+
+
+TransferGateway ---> PayDatabase
+TransferGateway ...> Channels
+
+PayManagerSystem -> PayDatabase
+PayManagerSystem -> QueryGateway
+
+OrderMonitor ---> PayDatabase
+OrderMonitor -> QueryGateway
+
+PayDatabase ---> mysql
+@enduml

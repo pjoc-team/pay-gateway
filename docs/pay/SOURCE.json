@@ -1,0 +1,28 @@
+{
+  "repository": "https://github.com/pjoc-team/pjoc-team.github.io",
+  "ref": "master",
+  "commit": "ef92d72c499805c91d91334b457504a7e7ff5611",
+  "imported_on": "2026-10-21",
+  "files": [
+    {
+      "path": "docs/pay/design/architecture.md",
+      "sha256": "6664758d712812a038761537554f12c1a18bb91ea50f40849ff5d2de18c877d3"
+    },
+    {
+      "path": "docs/pay/design/biz.md",
+      "sha256": "5ead49ea614bd667711f595b648998b80bd7570f6dab0b2663aebdf4fefef026"
+    },
+    {
+      "path": "docs/pay/design/design.puml",
+      "sha256": "12005004ac446f7c3e4e06f7735f2aeafcd219d9feea9deb2e19783f584e351d"
+    },
+    {
+      "path": "docs/pay/design/pay-admin.md",
+      "sha256": "6bfd89f1d237679f625d1f6196e72fb48519af0d43e1d006b543514d1dc6b6aa"
+    },
+    {
+      "path": "docs/pay/summary/pay-summary.md",
+      "sha256": "1e7340ea5310f324c548fbfd53ab69cf648676103b83890b0d324e1260040a9d"
+    }
+  ]
+}

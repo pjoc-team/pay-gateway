@@ -47,3 +47,10 @@ Blog: https://pjoc.pub/
     </td></tr>
 </table>
 <!-- readme: contributors -end -->
+
+## v2 重构设计
+
+`v2` 分支用于 all-in-one 支付系统重构，当前处于设计阶段。
+
+- [v2 设计入口](docs/v2/README.md)
+- [历史支付文档快照与来源](docs/pay/README.md)
